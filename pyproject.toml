@@ -3,6 +3,7 @@ name = "maxent_graph"
 version = "0.1.0"
 description = "Implementations of some max-entropy graph models. Also has support for statistically-validated one-mode projections of bipartite networks with BiCM."
 authors = ["Deklan Webster <deklanw@gmail.com>"]
+license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.8"
