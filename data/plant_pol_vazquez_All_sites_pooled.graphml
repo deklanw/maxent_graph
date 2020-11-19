@@ -1,0 +1,1843 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+
+  <!-- property keys -->
+  <key id="key0" for="node" attr.name="Catalog number" attr.type="string" />
+  <key id="key1" for="node" attr.name="Common name" attr.type="string" />
+  <key id="key2" for="node" attr.name="Family" attr.type="string" />
+  <key id="key3" for="node" attr.name="Life form" attr.type="string" />
+  <key id="key4" for="node" attr.name="Order" attr.type="string" />
+  <key id="key5" for="node" attr.name="Origin" attr.type="string" />
+  <key id="key6" for="node" attr.name="Plant species" attr.type="string" />
+  <key id="key7" for="node" attr.name="Species name" attr.type="string" />
+  <key id="key8" for="node" attr.name="_pos" attr.type="string" />
+  <key id="key9" for="graph" attr.name="citation" attr.type="string" />
+  <key id="key10" for="edge" attr.name="count" attr.type="int" />
+  <key id="key11" for="graph" attr.name="description" attr.type="string" />
+  <key id="key12" for="node" attr.name="idx" attr.type="int" />
+  <key id="key13" for="graph" attr.name="name" attr.type="string" />
+  <key id="key14" for="node" attr.name="pollinator" attr.type="boolean" />
+  <key id="key15" for="graph" attr.name="tags" attr.type="string" />
+  <key id="key16" for="graph" attr.name="url" attr.type="string" />
+
+  <graph id="G" edgedefault="undirected" parse.nodeids="canonical" parse.edgeids="canonical" parse.order="nodesfirst">
+
+   <!-- graph properties -->
+   <data key="key9">[&apos;D.P. Vazquez and D. Simberloff, &quot;Changes in interaction biodiversity induced by an introduced ungulate. Ecology Letters 6, 1077-1083 (2003), http://onlinelibrary.wiley.com/doi/10.1046/j.1461-0248.2003.00534.x/abstract&apos;]</data>
+   <data key="key11">Eight bipartite networks of plants and pollinators, from the Nahuel Huapi National Park and surrounding areas in Rio Negro, Argentina, from September 1999 to Feburary 2000. Edge weights represent the frequency of species interaction, and there is a common set of vertices across all eight webs[^icon]
+[^icon]: Description obtained from the [ICON](https://icon.colorado.edu) project.</data>
+   <data key="key13">plant_pol_vazquez (All sites pooled)</data>
+   <data key="key15">Biological, Food web, Weighted, Multilayer</data>
+   <data key="key16">https://iwdb.nceas.ucsb.edu/html/vazquez_2002.html</data>
+
+   <!-- vertices -->
+    <node id="n0">
+      <data key="key0">65</data>
+      <data key="key2">Colletidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Policana albopilosa</data>
+      <data key="key8">-17.333380282623885, 2.284461585942422</data>
+      <data key="key12">78</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n1">
+      <data key="key1">Maqui</data>
+      <data key="key2">Eleocarpaceae</data>
+      <data key="key3">Understory tree</data>
+      <data key="key5">Native</data>
+      <data key="key6">Aristotelia chilensis</data>
+      <data key="key8">-16.134607948387806, 2.1123135783036524</data>
+      <data key="key12">2</data>
+      <data key="key14">0</data>
+    </node>
+    <node id="n2">
+      <data key="key1">Amancay</data>
+      <data key="key2">Alstroemeriaceae</data>
+      <data key="key3">Herb</data>
+      <data key="key5">Native</data>
+      <data key="key6">Alstroemeria aurea</data>
+      <data key="key8">-12.189063716160137, 4.6510309848216256</data>
+      <data key="key12">1</data>
+      <data key="key14">0</data>
+    </node>
+    <node id="n3">
+      <data key="key1">Laura</data>
+      <data key="key2">Anacardiaceae</data>
+      <data key="key3">Understory tree</data>
+      <data key="key5">Native</data>
+      <data key="key6">Schinus patagonicus</data>
+      <data key="key8">-18.017425086735955, 3.8111073356479119</data>
+      <data key="key12">13</data>
+      <data key="key14">0</data>
+    </node>
+    <node id="n4">
+      <data key="key1">Michai</data>
+      <data key="key2">Berberidaceae</data>
+      <data key="key3">Shrub</data>
+      <data key="key5">Native</data>
+      <data key="key6">Berberis darwinii</data>
+      <data key="key8">-15.946103412474907, 6.1033518801792228</data>
+      <data key="key12">4</data>
+      <data key="key14">0</data>
+    </node>
+    <node id="n5">
+      <data key="key1">Arvejilla</data>
+      <data key="key2">Leguminosae</data>
+      <data key="key3">Vine</data>
+      <data key="key5">Native</data>
+      <data key="key6">Vicia nigricans</data>
+      <data key="key8">-14.774189209843618, 7.9676919811399589</data>
+      <data key="key12">15</data>
+      <data key="key14">0</data>
+    </node>
+    <node id="n6">
+      <data key="key1">Rosa mosqueta</data>
+      <data key="key2">Rosaceae</data>
+      <data key="key3">Shrub</data>
+      <data key="key5">Exotic</data>
+      <data key="key6">Rosa eglanteria</data>
+      <data key="key8">-14.394768599518731, 2.4766888612677413</data>
+      <data key="key12">11</data>
+      <data key="key14">0</data>
+    </node>
+    <node id="n7">
+      <data key="key1">Dedalera</data>
+      <data key="key2">Scrophulariaceae</data>
+      <data key="key3">Herb</data>
+      <data key="key5">Exotic</data>
+      <data key="key6">Digitalis purpurea</data>
+      <data key="key8">-14.3386571931684, 4.9971071717687598</data>
+      <data key="key12">7</data>
+      <data key="key14">0</data>
+    </node>
+    <node id="n8">
+      <data key="key1">-</data>
+      <data key="key2">Asclepiadaceae</data>
+      <data key="key3">Vine</data>
+      <data key="key5">Native</data>
+      <data key="key6">Cynanchum diemii</data>
+      <data key="key8">-18.84838216867783, 7.5391399018725229</data>
+      <data key="key12">6</data>
+      <data key="key14">0</data>
+    </node>
+    <node id="n9">
+      <data key="key1">Parrilla</data>
+      <data key="key2">Saxifragaceae</data>
+      <data key="key3">Shrub</data>
+      <data key="key5">Native</data>
+      <data key="key6">Ribes magellanicum</data>
+      <data key="key8">-17.43059607292448, 6.4847984998284742</data>
+      <data key="key12">12</data>
+      <data key="key14">0</data>
+    </node>
+    <node id="n10">
+      <data key="key1">Calafate</data>
+      <data key="key2">Berberidaceae</data>
+      <data key="key3">Shrub</data>
+      <data key="key5">Native</data>
+      <data key="key6">Berberis buxifolia</data>
+      <data key="key8">-16.725704040645788, 6.0919747061616674</data>
+      <data key="key12">3</data>
+      <data key="key14">0</data>
+    </node>
+    <node id="n11">
+      <data key="key1">Mutisia</data>
+      <data key="key2">Asteraceae</data>
+      <data key="key3">Vine</data>
+      <data key="key5">Native</data>
+      <data key="key6">Mutisia decurrens</data>
+      <data key="key8">-13.687287019139891, 5.16009856468885</data>
+      <data key="key12">10</data>
+      <data key="key14">0</data>
+    </node>
+    <node id="n12">
+      <data key="key1">Topa-topa</data>
+      <data key="key2">Scrophulariaceae</data>
+      <data key="key3">Herb</data>
+      <data key="key5">Native</data>
+      <data key="key6">Calceolaria crenatiflora</data>
+      <data key="key8">-17.029830367248369, 4.5186186411143403</data>
+      <data key="key12">5</data>
+      <data key="key14">0</data>
+    </node>
+    <node id="n13">
+      <data key="key1">Quintral</data>
+      <data key="key2">Loranthaceae</data>
+      <data key="key3">Parasitic shrub</data>
+      <data key="key5">Native</data>
+      <data key="key6">Tristerix corymbosus</data>
+      <data key="key8">-14.934635247148638, 6.8509918330340662</data>
+      <data key="key12">14</data>
+      <data key="key14">0</data>
+    </node>
+    <node id="n14">
+      <data key="key1">Orquídea</data>
+      <data key="key2">Ochidaceae</data>
+      <data key="key3">Herb</data>
+      <data key="key5">Native</data>
+      <data key="key6">Gavilea odoratissima</data>
+      <data key="key8">-6.8674034362172778, 5.6670258864760052</data>
+      <data key="key12">8</data>
+      <data key="key14">0</data>
+    </node>
+    <node id="n15">
+      <data key="key1">Chaurilla</data>
+      <data key="key2">Celastraceae</data>
+      <data key="key3">Shrub</data>
+      <data key="key5">Native</data>
+      <data key="key6">Maytenus chubutensis</data>
+      <data key="key8">-2.4276851545625222, 2.7209677510832626</data>
+      <data key="key12">9</data>
+      <data key="key14">0</data>
+    </node>
+    <node id="n16">
+      <data key="key0">4, 5</data>
+      <data key="key2">Apidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Bombus dahlbomii</data>
+      <data key="key8">-15.188367171022138, 5.1299793686526902</data>
+      <data key="key12">65</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n17">
+      <data key="key0">9</data>
+      <data key="key2">Halictidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Ruizantheda mutabilis</data>
+      <data key="key8">-15.082676728675693, 3.8512142923066812</data>
+      <data key="key12">94</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n18">
+      <data key="key0">54</data>
+      <data key="key2">Nemestrinidae</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">Trichophthalma amoena</data>
+      <data key="key8">-17.597837283677979, 5.5006962412973799</data>
+      <data key="key12">32</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n19">
+      <data key="key0">3</data>
+      <data key="key2">Apidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Bombus ruderatus</data>
+      <data key="key8">-13.772744748396175, 6.8219837708063178</data>
+      <data key="key12">66</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n20">
+      <data key="key0">62</data>
+      <data key="key2">Colletidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Colletes seminitidus</data>
+      <data key="key8">-17.409689870338276, 7.3234140452524787</data>
+      <data key="key12">76</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n21">
+      <data key="key0">104, 120</data>
+      <data key="key2">Syrphidae</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">Syrphus octomaculatus</data>
+      <data key="key8">-15.113835843694767, 4.3874539292174672</data>
+      <data key="key12">43</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n22">
+      <data key="key0">37</data>
+      <data key="key2">Apidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Manuelia gayi</data>
+      <data key="key8">-14.165065326298565, 6.0035355580871475</data>
+      <data key="key12">68</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n23">
+      <data key="key0">15, 56</data>
+      <data key="key2">Syrphidae</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">Allograpta hortensis, Toxomerus vertebratus</data>
+      <data key="key8">-15.845414114252229, 4.6703860698555495</data>
+      <data key="key12">40</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n24">
+      <data key="key0">16</data>
+      <data key="key2">Nemestrinidae</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">Trichophthalma jaffueli</data>
+      <data key="key8">-13.303935244893651, 2.6969907774434465</data>
+      <data key="key12">33</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n25">
+      <data key="key0">39</data>
+      <data key="key2">Buprestidae</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">Anthaxia sp.</data>
+      <data key="key8">-12.193311176333529, 5.5565165305908195</data>
+      <data key="key12">3</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n26">
+      <data key="key0">51</data>
+      <data key="key2">Halictidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Caenohalictus sp.</data>
+      <data key="key8">-16.733383872895548, 8.1881510271023803</data>
+      <data key="key12">87</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n27">
+      <data key="key0">29</data>
+      <data key="key2">Bombilidae</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">Phthiria sp.</data>
+      <data key="key8">-13.590879748124223, 3.4860048880683339</data>
+      <data key="key12">28</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n28">
+      <data key="key0">87</data>
+      <data key="key2">Syrphidae</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">Platycheirus (Carposcalis) sp.</data>
+      <data key="key8">-15.627123534967142, 3.6962595718526936</data>
+      <data key="key12">41</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n29">
+      <data key="key0">19</data>
+      <data key="key2">Apidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Manuelia postica</data>
+      <data key="key8">-15.184695996635462, 5.6993608349603466</data>
+      <data key="key12">69</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n30">
+      <data key="key0">178</data>
+      <data key="key2">Andrenidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Heterosarus sp.</data>
+      <data key="key8">-12.605765714004299, 6.2376293027561136</data>
+      <data key="key12">64</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n31">
+      <data key="key0">149</data>
+      <data key="key2">Lauxaniidae</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">Sapromyza fulvicornis, Minettia semifulva</data>
+      <data key="key8">-12.888399782518864, 3.5050825743396312</data>
+      <data key="key12">31</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n32">
+      <data key="key0">185</data>
+      <data key="key2">Formicidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Camponotus sp.</data>
+      <data key="key8">-19.891320641528765, 3.2139848031029192</data>
+      <data key="key12">81</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n33">
+      <data key="key0">61</data>
+      <data key="key2">Formicidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-18.265346158827459, 8.3106579464756347</data>
+      <data key="key12">82</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n34">
+      <data key="key0">55</data>
+      <data key="key2">Nitidulidae</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-15.92639763256487, 5.3855552379346143</data>
+      <data key="key12">9</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n35">
+      <data key="key0">112</data>
+      <data key="key2">Staphilinidae</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-15.206135221989827, 3.0382212308992602</data>
+      <data key="key12">11</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n36">
+      <data key="key0">162, 163</data>
+      <data key="key2">Megachilidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Megachile sp.</data>
+      <data key="key8">-11.46105048185146, 3.3711868474087132</data>
+      <data key="key12">105</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n37">
+      <data key="key0">122</data>
+      <data key="key2">Ichneumonidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-17.519421722929415, 1.5496367651811043</data>
+      <data key="key12">101</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n38">
+      <data key="key0">118</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Lepidoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-14.689725018000487, 9.9534318162337119</data>
+      <data key="key12">125</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n39">
+      <data key="key0">52</data>
+      <data key="key2">Braconidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-18.894175135923202, 9.5354281242163008</data>
+      <data key="key12">71</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n40">
+      <data key="key0">141</data>
+      <data key="key2">Apidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Chalepogenus caeruleus</data>
+      <data key="key8">-17.509209684825269, 3.1934632783782622</data>
+      <data key="key12">67</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n41">
+      <data key="key0">50</data>
+      <data key="key2">Vespidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Vespula germanica</data>
+      <data key="key8">-13.913240621330921, 4.1812702015766288</data>
+      <data key="key12">112</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n42">
+      <data key="key0">73</data>
+      <data key="key2">Torymidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-20.715414383638382, 7.6401251305357425</data>
+      <data key="key12">109</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n43">
+      <data key="key0">43</data>
+      <data key="key2">Bombilidae</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">Phthiria sp.</data>
+      <data key="key8">-9.2620603189989783, 4.612959362826035</data>
+      <data key="key12">29</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n44">
+      <data key="key0">110</data>
+      <data key="key2">Syrphidae</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">Ocyptamus melanorrhinus</data>
+      <data key="key8">-13.179225856773339, 4.1961224096141478</data>
+      <data key="key12">42</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n45">
+      <data key="key0">79</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-19.4599027026233, 6.0455791686889908</data>
+      <data key="key12">14</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n46">
+      <data key="key0">82</data>
+      <data key="key2">Formicidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-18.635253037613875, 1.2406807849815242</data>
+      <data key="key12">84</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n47">
+      <data key="key0">34</data>
+      <data key="key2">Apidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Svastrides melanura</data>
+      <data key="key8">-11.439987455666568, 2.5759891268325412</data>
+      <data key="key12">70</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n48">
+      <data key="key0">161</data>
+      <data key="key2">Halictidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Ruizantheda nigrocaerulea</data>
+      <data key="key8">-12.460020614752427, 2.7922467285318038</data>
+      <data key="key12">95</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n49">
+      <data key="key0">179</data>
+      <data key="key2">Halictidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Chilicola sp.</data>
+      <data key="key8">-11.398844673707638, 6.1905431526048567</data>
+      <data key="key12">89</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n50">
+      <data key="key0">168</data>
+      <data key="key2">Halictidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Evylaeus (=Dialictus) sp.</data>
+      <data key="key8">-12.22776986704284, 3.9884712007928647</data>
+      <data key="key12">93</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n51">
+      <data key="key0">78</data>
+      <data key="key2">Sphecidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-8.7186194239251247, 5.3336363333724721</data>
+      <data key="key12">107</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n52">
+      <data key="key0">—</data>
+      <data key="key2">Thomisidae</data>
+      <data key="key4">Araneae</data>
+      <data key="key7">All species (pooled)</data>
+      <data key="key8">-12.991495395001566, 5.3503994438093159</data>
+      <data key="key12">1</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n53">
+      <data key="key0">48</data>
+      <data key="key2">Halictidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Corynura prothysteres</data>
+      <data key="key8">-14.324307319910625, 3.3249603577455082</data>
+      <data key="key12">91</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n54">
+      <data key="key0">194</data>
+      <data key="key2">Megachilidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Megachile sp.</data>
+      <data key="key8">-10.68304052771736, 3.7658596706098475</data>
+      <data key="key12">106</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n55">
+      <data key="key0">203</data>
+      <data key="key2">Ichneumonidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-9.444067610615571, 2.9862773411697465</data>
+      <data key="key12">103</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n56">
+      <data key="key0">—</data>
+      <data key="key2">Trochilidae</data>
+      <data key="key4">Trochiliformes</data>
+      <data key="key7">Sephanoides galeritus</data>
+      <data key="key8">-13.372038407068947, 6.2557222770076395</data>
+      <data key="key12">128</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n57">
+      <data key="key0">63</data>
+      <data key="key2">Salpingidae</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-18.588412167344032, 6.0771621303714438</data>
+      <data key="key12">2</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n58">
+      <data key="key0">180</data>
+      <data key="key2">Halictidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Ruizantheda proxima</data>
+      <data key="key8">-10.061639765262006, 4.369913977597589</data>
+      <data key="key12">96</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n59">
+      <data key="key0">160</data>
+      <data key="key2">Hesperiidae</data>
+      <data key="key4">Lepidoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-10.691340868218166, 6.5606630017193925</data>
+      <data key="key12">126</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n60">
+      <data key="key0">157, 159</data>
+      <data key="key2">Mordellidae</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-13.598295524586163, -0.13474917206098869</data>
+      <data key="key12">10</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n61">
+      <data key="key0">11</data>
+      <data key="key2">Melyridae</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-10.016501657786298, 2.3956935180852423</data>
+      <data key="key12">12</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n62">
+      <data key="key0">69</data>
+      <data key="key2">Curculionidae</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-15.863743393129877, 8.3732699579543208</data>
+      <data key="key12">13</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n63">
+      <data key="key0">116</data>
+      <data key="key2">Phoridae</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-20.020569590797514, 4.1941924337870313</data>
+      <data key="key12">35</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n64">
+      <data key="key0">13</data>
+      <data key="key2">Syrphidae</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">Platycherius (Carposcalis) fenestratus</data>
+      <data key="key8">-14.506598947139395, -0.12301692652776298</data>
+      <data key="key12">38</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n65">
+      <data key="key0">14</data>
+      <data key="key2">Syrphidae</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">Scaeva melanostoma</data>
+      <data key="key8">-18.810688057145491, 4.8211907041231665</data>
+      <data key="key12">39</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n66">
+      <data key="key0">100</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-20.734960092857843, 3.0467321481411855</data>
+      <data key="key12">50</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n67">
+      <data key="key0">124</data>
+      <data key="key2">Braconidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-16.979086538912451, 0.037902535847823875</data>
+      <data key="key12">72</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n68">
+      <data key="key0">108</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Unknown</data>
+      <data key="key7">—</data>
+      <data key="key8">-19.228590520480054, 3.9059932979092395</data>
+      <data key="key12">129</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n69">
+      <data key="key0">121</data>
+      <data key="key2">Cantharidae</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-12.491506804600311, 2.0340477774847323</data>
+      <data key="key12">4</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n70">
+      <data key="key0">105</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-16.345260430446004, 4.0107434177398789</data>
+      <data key="key12">16</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n71">
+      <data key="key0">—</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-11.915844197516384, 6.8022452081779301</data>
+      <data key="key12">20</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n72">
+      <data key="key0">165</data>
+      <data key="key2">Melyridae</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-15.385126378208739, 0.075270976968468295</data>
+      <data key="key12">21</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n73">
+      <data key="key0">159</data>
+      <data key="key2">Acroceridae</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-13.236976310147424, 1.9950280917945884</data>
+      <data key="key12">26</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n74">
+      <data key="key0">174</data>
+      <data key="key2">Bombilidae</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-11.152616309017157, 4.4324860791498004</data>
+      <data key="key12">30</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n75">
+      <data key="key0">97</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-19.541292491373049, 1.4788083508241934</data>
+      <data key="key12">49</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n76">
+      <data key="key0">175</data>
+      <data key="key2">Halictidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Chilicola sp.</data>
+      <data key="key8">-12.609377677826989, 7.3060665581897855</data>
+      <data key="key12">88</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n77">
+      <data key="key0">93</data>
+      <data key="key2">Tinnidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-9.7392102223056369, 5.2732987435994358</data>
+      <data key="key12">108</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n78">
+      <data key="key0">—</data>
+      <data key="key2">Coccinellidae</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-9.1362657946470414, 3.8534222515103393</data>
+      <data key="key12">5</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n79">
+      <data key="key0">69</data>
+      <data key="key2">Curculionidae</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-20.832733930207723, 3.9667468084908397</data>
+      <data key="key12">7</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n80">
+      <data key="key0">94</data>
+      <data key="key2">Torymidae</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-19.858796993394453, 9.2263426843106089</data>
+      <data key="key12">15</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n81">
+      <data key="key0">106</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-19.501089158994315, 2.3483504269593958</data>
+      <data key="key12">17</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n82">
+      <data key="key0">107</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-18.881194224225009, 2.9789138952091578</data>
+      <data key="key12">18</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n83">
+      <data key="key0">192</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-10.360479740233522, 5.8430008904783657</data>
+      <data key="key12">23</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n84">
+      <data key="key0">201</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-10.633823921562012, 2.938810981711184</data>
+      <data key="key12">24</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n85">
+      <data key="key0">125</data>
+      <data key="key2">Asilidae</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-9.9523996549210487, 3.5690893628729836</data>
+      <data key="key12">27</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n86">
+      <data key="key0">114</data>
+      <data key="key2">Phoridae</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-20.555700458653597, 4.9840848470509211</data>
+      <data key="key12">34</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n87">
+      <data key="key0">164</data>
+      <data key="key2">Syrphidae</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">Allograpta exotica</data>
+      <data key="key8">-13.90034134272139, 0.76998754568680516</data>
+      <data key="key12">44</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n88">
+      <data key="key0">109</data>
+      <data key="key2">Tabanidae</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-9.8646594836985511, 6.7152949565680418</data>
+      <data key="key12">45</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n89">
+      <data key="key0">103</data>
+      <data key="key2">Tachinidae</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-18.534831941134204, 2.1281025962877864</data>
+      <data key="key12">46</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n90">
+      <data key="key0">169</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-15.789369995595248, 0.94882950203783911</data>
+      <data key="key12">51</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n91">
+      <data key="key0">193</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-11.541111920540827, 1.7344693191640026</data>
+      <data key="key12">55</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n92">
+      <data key="key0">207</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-11.213333097095763, 7.2371826826858401</data>
+      <data key="key12">57</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n93">
+      <data key="key0">208</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-10.533672565590804, 5.036170158326553</data>
+      <data key="key12">58</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n94">
+      <data key="key0">75, 189, 190</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Heteroptera</data>
+      <data key="key7">All species (pooled)</data>
+      <data key="key8">-10.722448804587046, 1.9720390345807284</data>
+      <data key="key12">61</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n95">
+      <data key="key0">117</data>
+      <data key="key2">Diapriidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-20.356174217440792, 2.1826475938587335</data>
+      <data key="key12">79</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n96">
+      <data key="key0">49</data>
+      <data key="key2">Halictidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Caenohalictus sp.</data>
+      <data key="key8">-13.592644087333747, 7.8468357311788557</data>
+      <data key="key12">86</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n97">
+      <data key="key0">191</data>
+      <data key="key2">Halictidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Chilicola sp.</data>
+      <data key="key8">-9.4596364477652255, 6.0162031453320068</data>
+      <data key="key12">90</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n98">
+      <data key="key0">153</data>
+      <data key="key2">Halictidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Corynura sp.</data>
+      <data key="key8">-12.873060315894133, 0.51634122915402436</data>
+      <data key="key12">92</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n99">
+      <data key="key0">—</data>
+      <data key="key2">Halictidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-14.80592546132821, 0.95745020839212125</data>
+      <data key="key12">97</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n100">
+      <data key="key0">25</data>
+      <data key="key2">Ichneumonidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-20.591783520322021, 8.6403009418776584</data>
+      <data key="key12">98</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n101">
+      <data key="key0">211</data>
+      <data key="key2">Ichneumonidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-11.837081502724889, 7.7516575791389029</data>
+      <data key="key12">104</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n102">
+      <data key="key0">113</data>
+      <data key="key2">Vespidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-19.670432900085292, 5.1119185857461904</data>
+      <data key="key12">111</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n103">
+      <data key="key0">166</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-10.463511480732786, 7.3675814783470379</data>
+      <data key="key12">118</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n104">
+      <data key="key0">204</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-11.24244602475661, 5.3855703346994988</data>
+      <data key="key12">121</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n105">
+      <data key="key0">45</data>
+      <data key="key2">Coccinellidae</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-11.211172238524176, -8.5891404913643683</data>
+      <data key="key12">6</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n106">
+      <data key="key0">213</data>
+      <data key="key2">Curculionidae</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-10.543044180651382, -5.9214309380203858</data>
+      <data key="key12">8</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n107">
+      <data key="key0">115</data>
+      <data key="key2">Pedilidae</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-5.7410693610334489, -5.7363531214826757</data>
+      <data key="key12">19</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n108">
+      <data key="key0">176</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-22.862484789417437, -3.5336121958938245</data>
+      <data key="key12">22</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n109">
+      <data key="key0">206</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Coleoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-26.880703497233689, 2.6313431271167547</data>
+      <data key="key12">25</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n110">
+      <data key="key0">129</data>
+      <data key="key2">Sciaridae</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-20.119149598377668, -7.8488345265671464</data>
+      <data key="key12">36</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n111">
+      <data key="key0">2</data>
+      <data key="key2">Syrphidae</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">Syrphus poecilogaster</data>
+      <data key="key8">-20.023341867075768, 15.645946019008973</data>
+      <data key="key12">37</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n112">
+      <data key="key0">67</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-8.2218997563888561, -4.7616075971623726</data>
+      <data key="key12">47</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n113">
+      <data key="key0">68</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-1.9423274225399414, 0.25188162486305909</data>
+      <data key="key12">48</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n114">
+      <data key="key0">183</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-3.5941345674654541, 10.07826065836788</data>
+      <data key="key12">52</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n115">
+      <data key="key0">186</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-7.140456981644145, 13.205961977621607</data>
+      <data key="key12">53</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n116">
+      <data key="key0">187</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-25.049793764180031, -1.1885478145170447</data>
+      <data key="key12">54</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n117">
+      <data key="key0">199</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-10.576765873152675, 14.568700562307981</data>
+      <data key="key12">56</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n118">
+      <data key="key0">210</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">Phoridae</data>
+      <data key="key8">-17.577300186926337, 15.253856052083117</data>
+      <data key="key12">59</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n119">
+      <data key="key0">215</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Diptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-13.020088091794475, -6.5412058934387334</data>
+      <data key="key12">60</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n120">
+      <data key="key0">70</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Homoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-20.469315970844072, -5.1302498489948007</data>
+      <data key="key12">62</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n121">
+      <data key="key0">123</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Homoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-27.258295383086686, 5.1108436794478207</data>
+      <data key="key12">63</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n122">
+      <data key="key0">205</data>
+      <data key="key2">Braconidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-15.542050067836103, -6.6020673403008061</data>
+      <data key="key12">73</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n123">
+      <data key="key0">90</data>
+      <data key="key2">Chalcicoidea</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-8.208202281368731, 15.485568438169111</data>
+      <data key="key12">74</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n124">
+      <data key="key0">188</data>
+      <data key="key2">Chalcicoidea</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-1.8070009365552144, 5.1830414648371965</data>
+      <data key="key12">75</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n125">
+      <data key="key0">184</data>
+      <data key="key2">Colletidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Diphaglosa gayi</data>
+      <data key="key8">-6.0470829791482377, -3.0503232416770802</data>
+      <data key="key12">77</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n126">
+      <data key="key0">144</data>
+      <data key="key2">Eumenidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Hydrodynerus sp.</data>
+      <data key="key8">-14.188482034790157, -8.9962201546968963</data>
+      <data key="key12">80</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n127">
+      <data key="key0">80</data>
+      <data key="key2">Formicidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-4.8019517154261067, 12.330110956102359</data>
+      <data key="key12">83</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n128">
+      <data key="key0">190</data>
+      <data key="key2">Halictidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">Caenohalictus sp.</data>
+      <data key="key8">-11.869606362711231, 16.82626316716879</data>
+      <data key="key12">85</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n129">
+      <data key="key0">95</data>
+      <data key="key2">Ichneumonidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-18.06219495259829, -6.1542353123360405</data>
+      <data key="key12">99</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n130">
+      <data key="key0">98</data>
+      <data key="key2">Ichneumonidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-24.229031423118975, 12.392050926898436</data>
+      <data key="key12">100</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n131">
+      <data key="key0">132</data>
+      <data key="key2">Ichneumonidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-26.725213242530032, 7.6064954924144752</data>
+      <data key="key12">102</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n132">
+      <data key="key0">94</data>
+      <data key="key2">Torymidae</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-27.09683658466508, 0.15600019945594187</data>
+      <data key="key12">110</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n133">
+      <data key="key0">32</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-15.833672230433587, 17.082672820702875</data>
+      <data key="key12">113</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n134">
+      <data key="key0">64</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-4.1882104137973251, -0.65790569066062032</data>
+      <data key="key12">114</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n135">
+      <data key="key0">71</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-2.3849844471711923, 7.7361618567198942</data>
+      <data key="key12">115</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n136">
+      <data key="key0">93</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-17.183664441559461, -8.7685849591816005</data>
+      <data key="key12">116</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n137">
+      <data key="key0">130</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-25.38168278398739, -3.711713129239842</data>
+      <data key="key12">117</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n138">
+      <data key="key0">173</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-25.790340503165279, 10.112825278277938</data>
+      <data key="key12">119</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n139">
+      <data key="key0">195</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-22.876561316259263, -6.2174439691423071</data>
+      <data key="key12">120</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n140">
+      <data key="key0">212</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-22.11254409857176, 14.066820877955616</data>
+      <data key="key12">122</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n141">
+      <data key="key0">214</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Hymenoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-14.017556673200716, 15.310121318931456</data>
+      <data key="key12">123</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n142">
+      <data key="key0">74</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Lepidoptera</data>
+      <data key="key7">—</data>
+      <data key="key8">-8.3670263927398967, -7.4852775553491249</data>
+      <data key="key12">124</data>
+      <data key="key14">1</data>
+    </node>
+    <node id="n143">
+      <data key="key0">—</data>
+      <data key="key2">Unknown</data>
+      <data key="key4">Odonata</data>
+      <data key="key7">—</data>
+      <data key="key8">-3.4864801159240857, -3.1877332831146892</data>
+      <data key="key12">127</data>
+      <data key="key14">1</data>
+    </node>
+
+   <!-- edges -->
+    <edge id="e0" source="n0" target="n1">
+      <data key="key10">1069</data>
+    </edge>
+    <edge id="e1" source="n0" target="n3">
+      <data key="key10">690</data>
+    </edge>
+    <edge id="e2" source="n16" target="n2">
+      <data key="key10">583</data>
+    </edge>
+    <edge id="e3" source="n16" target="n3">
+      <data key="key10">16</data>
+    </edge>
+    <edge id="e4" source="n16" target="n4">
+      <data key="key10">265</data>
+    </edge>
+    <edge id="e5" source="n16" target="n5">
+      <data key="key10">469</data>
+    </edge>
+    <edge id="e6" source="n16" target="n6">
+      <data key="key10">24</data>
+    </edge>
+    <edge id="e7" source="n16" target="n7">
+      <data key="key10">66</data>
+    </edge>
+    <edge id="e8" source="n16" target="n10">
+      <data key="key10">2</data>
+    </edge>
+    <edge id="e9" source="n16" target="n11">
+      <data key="key10">19</data>
+    </edge>
+    <edge id="e10" source="n16" target="n12">
+      <data key="key10">4</data>
+    </edge>
+    <edge id="e11" source="n16" target="n13">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e12" source="n17" target="n1">
+      <data key="key10">172</data>
+    </edge>
+    <edge id="e13" source="n17" target="n2">
+      <data key="key10">17</data>
+    </edge>
+    <edge id="e14" source="n17" target="n3">
+      <data key="key10">240</data>
+    </edge>
+    <edge id="e15" source="n17" target="n4">
+      <data key="key10">9</data>
+    </edge>
+    <edge id="e16" source="n17" target="n6">
+      <data key="key10">10</data>
+    </edge>
+    <edge id="e17" source="n17" target="n7">
+      <data key="key10">8</data>
+    </edge>
+    <edge id="e18" source="n18" target="n3">
+      <data key="key10">3</data>
+    </edge>
+    <edge id="e19" source="n18" target="n4">
+      <data key="key10">108</data>
+    </edge>
+    <edge id="e20" source="n18" target="n9">
+      <data key="key10">70</data>
+    </edge>
+    <edge id="e21" source="n18" target="n10">
+      <data key="key10">75</data>
+    </edge>
+    <edge id="e22" source="n19" target="n2">
+      <data key="key10">173</data>
+    </edge>
+    <edge id="e23" source="n19" target="n5">
+      <data key="key10">10</data>
+    </edge>
+    <edge id="e24" source="n19" target="n7">
+      <data key="key10">13</data>
+    </edge>
+    <edge id="e25" source="n20" target="n4">
+      <data key="key10">77</data>
+    </edge>
+    <edge id="e26" source="n20" target="n8">
+      <data key="key10">32</data>
+    </edge>
+    <edge id="e27" source="n20" target="n9">
+      <data key="key10">5</data>
+    </edge>
+    <edge id="e28" source="n20" target="n10">
+      <data key="key10">8</data>
+    </edge>
+    <edge id="e29" source="n21" target="n2">
+      <data key="key10">28</data>
+    </edge>
+    <edge id="e30" source="n21" target="n3">
+      <data key="key10">49</data>
+    </edge>
+    <edge id="e31" source="n21" target="n4">
+      <data key="key10">5</data>
+    </edge>
+    <edge id="e32" source="n21" target="n6">
+      <data key="key10">34</data>
+    </edge>
+    <edge id="e33" source="n22" target="n2">
+      <data key="key10">101</data>
+    </edge>
+    <edge id="e34" source="n22" target="n4">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e35" source="n22" target="n11">
+      <data key="key10">6</data>
+    </edge>
+    <edge id="e36" source="n23" target="n2">
+      <data key="key10">7</data>
+    </edge>
+    <edge id="e37" source="n23" target="n3">
+      <data key="key10">43</data>
+    </edge>
+    <edge id="e38" source="n23" target="n4">
+      <data key="key10">9</data>
+    </edge>
+    <edge id="e39" source="n23" target="n6">
+      <data key="key10">33</data>
+    </edge>
+    <edge id="e40" source="n23" target="n9">
+      <data key="key10">3</data>
+    </edge>
+    <edge id="e41" source="n23" target="n10">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e42" source="n23" target="n12">
+      <data key="key10">2</data>
+    </edge>
+    <edge id="e43" source="n24" target="n2">
+      <data key="key10">69</data>
+    </edge>
+    <edge id="e44" source="n24" target="n6">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e45" source="n25" target="n2">
+      <data key="key10">40</data>
+    </edge>
+    <edge id="e46" source="n25" target="n11">
+      <data key="key10">13</data>
+    </edge>
+    <edge id="e47" source="n26" target="n4">
+      <data key="key10">48</data>
+    </edge>
+    <edge id="e48" source="n27" target="n2">
+      <data key="key10">39</data>
+    </edge>
+    <edge id="e49" source="n27" target="n6">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e50" source="n27" target="n11">
+      <data key="key10">5</data>
+    </edge>
+    <edge id="e51" source="n28" target="n1">
+      <data key="key10">6</data>
+    </edge>
+    <edge id="e52" source="n28" target="n2">
+      <data key="key10">2</data>
+    </edge>
+    <edge id="e53" source="n28" target="n3">
+      <data key="key10">16</data>
+    </edge>
+    <edge id="e54" source="n28" target="n4">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e55" source="n28" target="n6">
+      <data key="key10">10</data>
+    </edge>
+    <edge id="e56" source="n29" target="n2">
+      <data key="key10">11</data>
+    </edge>
+    <edge id="e57" source="n29" target="n3">
+      <data key="key10">12</data>
+    </edge>
+    <edge id="e58" source="n29" target="n4">
+      <data key="key10">5</data>
+    </edge>
+    <edge id="e59" source="n29" target="n13">
+      <data key="key10">4</data>
+    </edge>
+    <edge id="e60" source="n30" target="n2">
+      <data key="key10">22</data>
+    </edge>
+    <edge id="e61" source="n30" target="n11">
+      <data key="key10">8</data>
+    </edge>
+    <edge id="e62" source="n31" target="n2">
+      <data key="key10">11</data>
+    </edge>
+    <edge id="e63" source="n31" target="n6">
+      <data key="key10">11</data>
+    </edge>
+    <edge id="e64" source="n31" target="n11">
+      <data key="key10">6</data>
+    </edge>
+    <edge id="e65" source="n32" target="n3">
+      <data key="key10">27</data>
+    </edge>
+    <edge id="e66" source="n33" target="n8">
+      <data key="key10">19</data>
+    </edge>
+    <edge id="e67" source="n33" target="n9">
+      <data key="key10">3</data>
+    </edge>
+    <edge id="e68" source="n34" target="n2">
+      <data key="key10">2</data>
+    </edge>
+    <edge id="e69" source="n34" target="n6">
+      <data key="key10">3</data>
+    </edge>
+    <edge id="e70" source="n34" target="n8">
+      <data key="key10">8</data>
+    </edge>
+    <edge id="e71" source="n34" target="n9">
+      <data key="key10">8</data>
+    </edge>
+    <edge id="e72" source="n35" target="n2">
+      <data key="key10">11</data>
+    </edge>
+    <edge id="e73" source="n35" target="n3">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e74" source="n35" target="n6">
+      <data key="key10">7</data>
+    </edge>
+    <edge id="e75" source="n36" target="n2">
+      <data key="key10">17</data>
+    </edge>
+    <edge id="e76" source="n37" target="n1">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e77" source="n37" target="n3">
+      <data key="key10">15</data>
+    </edge>
+    <edge id="e78" source="n38" target="n5">
+      <data key="key10">16</data>
+    </edge>
+    <edge id="e79" source="n39" target="n8">
+      <data key="key10">15</data>
+    </edge>
+    <edge id="e80" source="n40" target="n12">
+      <data key="key10">14</data>
+    </edge>
+    <edge id="e81" source="n41" target="n2">
+      <data key="key10">8</data>
+    </edge>
+    <edge id="e82" source="n41" target="n6">
+      <data key="key10">2</data>
+    </edge>
+    <edge id="e83" source="n41" target="n7">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e84" source="n41" target="n11">
+      <data key="key10">3</data>
+    </edge>
+    <edge id="e85" source="n42" target="n8">
+      <data key="key10">12</data>
+    </edge>
+    <edge id="e86" source="n43" target="n2">
+      <data key="key10">11</data>
+    </edge>
+    <edge id="e87" source="n44" target="n2">
+      <data key="key10">8</data>
+    </edge>
+    <edge id="e88" source="n44" target="n6">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e89" source="n44" target="n11">
+      <data key="key10">2</data>
+    </edge>
+    <edge id="e90" source="n45" target="n3">
+      <data key="key10">9</data>
+    </edge>
+    <edge id="e91" source="n45" target="n8">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e92" source="n46" target="n3">
+      <data key="key10">10</data>
+    </edge>
+    <edge id="e93" source="n47" target="n2">
+      <data key="key10">8</data>
+    </edge>
+    <edge id="e94" source="n48" target="n2">
+      <data key="key10">5</data>
+    </edge>
+    <edge id="e95" source="n48" target="n6">
+      <data key="key10">3</data>
+    </edge>
+    <edge id="e96" source="n49" target="n2">
+      <data key="key10">7</data>
+    </edge>
+    <edge id="e97" source="n50" target="n2">
+      <data key="key10">6</data>
+    </edge>
+    <edge id="e98" source="n50" target="n11">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e99" source="n51" target="n2">
+      <data key="key10">6</data>
+    </edge>
+    <edge id="e100" source="n51" target="n14">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e101" source="n52" target="n2">
+      <data key="key10">5</data>
+    </edge>
+    <edge id="e102" source="n52" target="n7">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e103" source="n53" target="n1">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e104" source="n53" target="n2">
+      <data key="key10">3</data>
+    </edge>
+    <edge id="e105" source="n53" target="n7">
+      <data key="key10">2</data>
+    </edge>
+    <edge id="e106" source="n54" target="n2">
+      <data key="key10">6</data>
+    </edge>
+    <edge id="e107" source="n55" target="n2">
+      <data key="key10">5</data>
+    </edge>
+    <edge id="e108" source="n56" target="n2">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e109" source="n56" target="n11">
+      <data key="key10">3</data>
+    </edge>
+    <edge id="e110" source="n56" target="n13">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e111" source="n57" target="n3">
+      <data key="key10">2</data>
+    </edge>
+    <edge id="e112" source="n57" target="n8">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e113" source="n57" target="n9">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e114" source="n58" target="n2">
+      <data key="key10">4</data>
+    </edge>
+    <edge id="e115" source="n59" target="n2">
+      <data key="key10">4</data>
+    </edge>
+    <edge id="e116" source="n60" target="n6">
+      <data key="key10">3</data>
+    </edge>
+    <edge id="e117" source="n61" target="n2">
+      <data key="key10">3</data>
+    </edge>
+    <edge id="e118" source="n62" target="n4">
+      <data key="key10">3</data>
+    </edge>
+    <edge id="e119" source="n63" target="n3">
+      <data key="key10">3</data>
+    </edge>
+    <edge id="e120" source="n64" target="n6">
+      <data key="key10">3</data>
+    </edge>
+    <edge id="e121" source="n65" target="n3">
+      <data key="key10">3</data>
+    </edge>
+    <edge id="e122" source="n66" target="n3">
+      <data key="key10">3</data>
+    </edge>
+    <edge id="e123" source="n67" target="n1">
+      <data key="key10">3</data>
+    </edge>
+    <edge id="e124" source="n68" target="n3">
+      <data key="key10">3</data>
+    </edge>
+    <edge id="e125" source="n69" target="n2">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e126" source="n69" target="n6">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e127" source="n70" target="n3">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e128" source="n70" target="n11">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e129" source="n71" target="n2">
+      <data key="key10">2</data>
+    </edge>
+    <edge id="e130" source="n72" target="n6">
+      <data key="key10">2</data>
+    </edge>
+    <edge id="e131" source="n73" target="n2">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e132" source="n73" target="n6">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e133" source="n74" target="n2">
+      <data key="key10">2</data>
+    </edge>
+    <edge id="e134" source="n75" target="n3">
+      <data key="key10">2</data>
+    </edge>
+    <edge id="e135" source="n76" target="n2">
+      <data key="key10">2</data>
+    </edge>
+    <edge id="e136" source="n77" target="n2">
+      <data key="key10">2</data>
+    </edge>
+    <edge id="e137" source="n78" target="n2">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e138" source="n79" target="n3">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e139" source="n80" target="n8">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e140" source="n81" target="n3">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e141" source="n82" target="n3">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e142" source="n83" target="n2">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e143" source="n84" target="n2">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e144" source="n85" target="n2">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e145" source="n86" target="n3">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e146" source="n87" target="n6">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e147" source="n88" target="n2">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e148" source="n89" target="n3">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e149" source="n90" target="n6">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e150" source="n91" target="n2">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e151" source="n92" target="n2">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e152" source="n93" target="n2">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e153" source="n94" target="n2">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e154" source="n95" target="n3">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e155" source="n96" target="n11">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e156" source="n97" target="n2">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e157" source="n98" target="n6">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e158" source="n99" target="n6">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e159" source="n100" target="n8">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e160" source="n101" target="n2">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e161" source="n102" target="n3">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e162" source="n103" target="n2">
+      <data key="key10">1</data>
+    </edge>
+    <edge id="e163" source="n104" target="n2">
+      <data key="key10">1</data>
+    </edge>
+
+  </graph>
+</graphml>

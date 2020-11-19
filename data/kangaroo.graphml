@@ -1,0 +1,445 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+
+  <!-- property keys -->
+  <key id="key0" for="node" attr.name="_pos" attr.type="string" />
+  <key id="key1" for="graph" attr.name="citation" attr.type="string" />
+  <key id="key2" for="graph" attr.name="description" attr.type="string" />
+  <key id="key3" for="graph" attr.name="konect_meta" attr.type="string" />
+  <key id="key4" for="graph" attr.name="konect_readme" attr.type="string" />
+  <key id="key5" for="graph" attr.name="name" attr.type="string" />
+  <key id="key6" for="graph" attr.name="tags" attr.type="string" />
+  <key id="key7" for="graph" attr.name="url" attr.type="string" />
+  <key id="key8" for="edge" attr.name="weight" attr.type="int" />
+
+  <graph id="G" edgedefault="undirected" parse.nodeids="canonical" parse.edgeids="canonical" parse.order="nodesfirst">
+
+   <!-- graph properties -->
+   <data key="key1">[&apos;T.R. Grant. &quot;Dominance and association among members of a captive and a free-ranging group of grey kangaroos (Macropus giganteus).&quot; Animal Behaviour 21(3), 449-456, (1973), http://www.sciencedirect.com/science/article/pii/S0003347273800041&apos;]</data>
+   <data key="key2">Dominance relations among a group of free-ranging grey kangaroos (Macropus giganteus). Edge weights represent the frequency of interaction. The two versions below are equivalent.</data>
+   <data key="key3">category: Animal
+code: MK
+name: Kangaroos
+description: Kangaroo-kangaroo interactions
+entity-names: kangaroo
+extr: moreno
+url: http://moreno.ss.uci.edu/data.html#kangaroo
+long-description: This undirected network contains interactions between free-ranging eastern grey kangaroos (&lt;I&gt;Macropus giganteus&lt;/I&gt;) in the Nadgee Nature Reserve in New South Wales, Australia.  A node represents a kangaroo and an edge between two kangaroos shows that there was an interaction between them. The edge weights denote the number of interactions.
+relationship-names: interaction
+cite: konect:grant
+timeiso:  1973
+</data>
+   <data key="key4">Kangaroos network, part of the Koblenz Network Collection
+===========================================================================
+
+This directory contains the TSV and related files of the moreno_kangaroo network: This undirected network contains interactions between free-ranging eastern grey kangaroos (&lt;I&gt;Macropus giganteus&lt;/I&gt;) in the Nadgee Nature Reserve in New South Wales, Australia.  A node represents a kangaroo and an edge between two kangaroos shows that there was an interaction between them. The edge weights denote the number of interactions.
+
+
+More information about the network is provided here: 
+http://konect.cc/networks/moreno_kangaroo
+
+Files: 
+    meta.moreno_kangaroo -- Metadata about the network 
+    out.moreno_kangaroo -- The adjacency matrix of the network in whitespace-separated values format, with one edge per line
+      The meaning of the columns in out.moreno_kangaroo are: 
+        First column: ID of from node 
+        Second column: ID of to node
+        Third column (if present): weight or multiplicity of edge
+        Fourth column (if present):  timestamp of edges Unix time
+        Third column: edge weight
+
+
+Use the following References for citation:
+
+@MISC{konect:2017:moreno_kangaroo,
+    title = {Kangaroos network dataset -- {KONECT}},
+    month = oct,
+    year = {2017},
+    url = {http://konect.cc/networks/moreno_kangaroo}
+}
+
+@article{konect:grant,
+	title = {Dominance and Association among Members of a Captive and a
+                  Free-ranging Group of Grey Kangaroos (\emph{{Macropus} giganteus})},
+	author = {Grant, T. R.},
+	journal = {Anim. Behav.},
+	volume = {21},
+	number = {3},
+	pages = {449--456},
+	year = {1973},
+}
+
+@article{konect:grant,
+	title = {Dominance and Association among Members of a Captive and a
+                  Free-ranging Group of Grey Kangaroos (\emph{{Macropus} giganteus})},
+	author = {Grant, T. R.},
+	journal = {Anim. Behav.},
+	volume = {21},
+	number = {3},
+	pages = {449--456},
+	year = {1973},
+}
+
+
+@inproceedings{konect,
+	title = {{KONECT} -- {The} {Koblenz} {Network} {Collection}},
+	author = {Jérôme Kunegis},
+	year = {2013},
+	booktitle = {Proc. Int. Conf. on World Wide Web Companion},
+	pages = {1343--1350},
+	url = {http://dl.acm.org/citation.cfm?id=2488173},
+	url_presentation = {https://www.slideshare.net/kunegis/presentationwow},
+	url_web = {http://konect.cc/},
+	url_citations = {https://scholar.google.com/scholar?cites=7174338004474749050},
+}
+
+@inproceedings{konect,
+	title = {{KONECT} -- {The} {Koblenz} {Network} {Collection}},
+	author = {Jérôme Kunegis},
+	year = {2013},
+	booktitle = {Proc. Int. Conf. on World Wide Web Companion},
+	pages = {1343--1350},
+	url = {http://dl.acm.org/citation.cfm?id=2488173},
+	url_presentation = {https://www.slideshare.net/kunegis/presentationwow},
+	url_web = {http://konect.cc/},
+	url_citations = {https://scholar.google.com/scholar?cites=7174338004474749050},
+}
+
+
+</data>
+   <data key="key5">kangaroo</data>
+   <data key="key6">Social, Animal, Weighted</data>
+   <data key="key7">http://konect.cc/networks/moreno_kangaroo</data>
+
+   <!-- vertices -->
+    <node id="n0">
+      <data key="key0">4.1572562929147372, -5.1444536600886019</data>
+    </node>
+    <node id="n1">
+      <data key="key0">4.2346957605087976, -4.989287032079277</data>
+    </node>
+    <node id="n2">
+      <data key="key0">4.2812811019669885, -5.1970865876592534</data>
+    </node>
+    <node id="n3">
+      <data key="key0">4.0649759776915522, -5.0768338991176503</data>
+    </node>
+    <node id="n4">
+      <data key="key0">4.3443100369757159, -5.0537668698087108</data>
+    </node>
+    <node id="n5">
+      <data key="key0">4.1386990594269557, -5.0135753060264001</data>
+    </node>
+    <node id="n6">
+      <data key="key0">4.2359358484587357, -5.087563528643134</data>
+    </node>
+    <node id="n7">
+      <data key="key0">4.2158714494683309, -5.3022421737820498</data>
+    </node>
+    <node id="n8">
+      <data key="key0">4.3385728915306006, -5.2924517207073132</data>
+    </node>
+    <node id="n9">
+      <data key="key0">4.0377341471765078, -5.2067546710412129</data>
+    </node>
+    <node id="n10">
+      <data key="key0">4.3641278712100666, -5.1459722090547881</data>
+    </node>
+    <node id="n11">
+      <data key="key0">4.109870041403445, -5.2864014847975449</data>
+    </node>
+    <node id="n12">
+      <data key="key0">4.1136740716113538, -4.8834830854451852</data>
+    </node>
+    <node id="n13">
+      <data key="key0">4.2325671261712099, -4.8254267946433353</data>
+    </node>
+    <node id="n14">
+      <data key="key0">4.3561035431767436, -4.9343181009908639</data>
+    </node>
+    <node id="n15">
+      <data key="key0">4.6207730371084894, -5.1433779292231643</data>
+    </node>
+    <node id="n16">
+      <data key="key0">4.4974984937153399, -5.5980916689994578</data>
+    </node>
+
+   <!-- edges -->
+    <edge id="e0" source="n0" target="n1">
+      <data key="key8">21</data>
+    </edge>
+    <edge id="e1" source="n0" target="n2">
+      <data key="key8">10</data>
+    </edge>
+    <edge id="e2" source="n0" target="n3">
+      <data key="key8">45</data>
+    </edge>
+    <edge id="e3" source="n0" target="n4">
+      <data key="key8">54</data>
+    </edge>
+    <edge id="e4" source="n0" target="n5">
+      <data key="key8">7</data>
+    </edge>
+    <edge id="e5" source="n0" target="n6">
+      <data key="key8">16</data>
+    </edge>
+    <edge id="e6" source="n0" target="n7">
+      <data key="key8">1</data>
+    </edge>
+    <edge id="e7" source="n0" target="n8">
+      <data key="key8">3</data>
+    </edge>
+    <edge id="e8" source="n0" target="n9">
+      <data key="key8">4</data>
+    </edge>
+    <edge id="e9" source="n0" target="n10">
+      <data key="key8">7</data>
+    </edge>
+    <edge id="e10" source="n0" target="n11">
+      <data key="key8">3</data>
+    </edge>
+    <edge id="e11" source="n0" target="n12">
+      <data key="key8">2</data>
+    </edge>
+    <edge id="e12" source="n0" target="n13">
+      <data key="key8">3</data>
+    </edge>
+    <edge id="e13" source="n0" target="n14">
+      <data key="key8">3</data>
+    </edge>
+    <edge id="e14" source="n1" target="n2">
+      <data key="key8">9</data>
+    </edge>
+    <edge id="e15" source="n1" target="n3">
+      <data key="key8">19</data>
+    </edge>
+    <edge id="e16" source="n1" target="n4">
+      <data key="key8">20</data>
+    </edge>
+    <edge id="e17" source="n1" target="n5">
+      <data key="key8">3</data>
+    </edge>
+    <edge id="e18" source="n1" target="n6">
+      <data key="key8">9</data>
+    </edge>
+    <edge id="e19" source="n1" target="n7">
+      <data key="key8">1</data>
+    </edge>
+    <edge id="e20" source="n1" target="n8">
+      <data key="key8">10</data>
+    </edge>
+    <edge id="e21" source="n1" target="n9">
+      <data key="key8">4</data>
+    </edge>
+    <edge id="e22" source="n1" target="n10">
+      <data key="key8">11</data>
+    </edge>
+    <edge id="e23" source="n1" target="n11">
+      <data key="key8">2</data>
+    </edge>
+    <edge id="e24" source="n1" target="n12">
+      <data key="key8">2</data>
+    </edge>
+    <edge id="e25" source="n1" target="n13">
+      <data key="key8">2</data>
+    </edge>
+    <edge id="e26" source="n1" target="n14">
+      <data key="key8">6</data>
+    </edge>
+    <edge id="e27" source="n2" target="n3">
+      <data key="key8">8</data>
+    </edge>
+    <edge id="e28" source="n2" target="n4">
+      <data key="key8">10</data>
+    </edge>
+    <edge id="e29" source="n2" target="n5">
+      <data key="key8">3</data>
+    </edge>
+    <edge id="e30" source="n2" target="n6">
+      <data key="key8">5</data>
+    </edge>
+    <edge id="e31" source="n2" target="n7">
+      <data key="key8">1</data>
+    </edge>
+    <edge id="e32" source="n2" target="n8">
+      <data key="key8">9</data>
+    </edge>
+    <edge id="e33" source="n2" target="n9">
+      <data key="key8">4</data>
+    </edge>
+    <edge id="e34" source="n2" target="n10">
+      <data key="key8">10</data>
+    </edge>
+    <edge id="e35" source="n2" target="n14">
+      <data key="key8">3</data>
+    </edge>
+    <edge id="e36" source="n2" target="n15">
+      <data key="key8">2</data>
+    </edge>
+    <edge id="e37" source="n3" target="n4">
+      <data key="key8">45</data>
+    </edge>
+    <edge id="e38" source="n3" target="n5">
+      <data key="key8">7</data>
+    </edge>
+    <edge id="e39" source="n3" target="n6">
+      <data key="key8">17</data>
+    </edge>
+    <edge id="e40" source="n3" target="n7">
+      <data key="key8">1</data>
+    </edge>
+    <edge id="e41" source="n3" target="n8">
+      <data key="key8">1</data>
+    </edge>
+    <edge id="e42" source="n3" target="n9">
+      <data key="key8">3</data>
+    </edge>
+    <edge id="e43" source="n3" target="n10">
+      <data key="key8">6</data>
+    </edge>
+    <edge id="e44" source="n3" target="n11">
+      <data key="key8">3</data>
+    </edge>
+    <edge id="e45" source="n3" target="n12">
+      <data key="key8">2</data>
+    </edge>
+    <edge id="e46" source="n3" target="n13">
+      <data key="key8">3</data>
+    </edge>
+    <edge id="e47" source="n3" target="n14">
+      <data key="key8">4</data>
+    </edge>
+    <edge id="e48" source="n4" target="n5">
+      <data key="key8">6</data>
+    </edge>
+    <edge id="e49" source="n4" target="n6">
+      <data key="key8">17</data>
+    </edge>
+    <edge id="e50" source="n4" target="n7">
+      <data key="key8">1</data>
+    </edge>
+    <edge id="e51" source="n4" target="n8">
+      <data key="key8">3</data>
+    </edge>
+    <edge id="e52" source="n4" target="n9">
+      <data key="key8">4</data>
+    </edge>
+    <edge id="e53" source="n4" target="n10">
+      <data key="key8">6</data>
+    </edge>
+    <edge id="e54" source="n4" target="n11">
+      <data key="key8">1</data>
+    </edge>
+    <edge id="e55" source="n4" target="n12">
+      <data key="key8">2</data>
+    </edge>
+    <edge id="e56" source="n4" target="n13">
+      <data key="key8">3</data>
+    </edge>
+    <edge id="e57" source="n4" target="n14">
+      <data key="key8">3</data>
+    </edge>
+    <edge id="e58" source="n4" target="n15">
+      <data key="key8">1</data>
+    </edge>
+    <edge id="e59" source="n5" target="n6">
+      <data key="key8">4</data>
+    </edge>
+    <edge id="e60" source="n5" target="n7">
+      <data key="key8">1</data>
+    </edge>
+    <edge id="e61" source="n5" target="n8">
+      <data key="key8">2</data>
+    </edge>
+    <edge id="e62" source="n5" target="n9">
+      <data key="key8">2</data>
+    </edge>
+    <edge id="e63" source="n5" target="n10">
+      <data key="key8">3</data>
+    </edge>
+    <edge id="e64" source="n5" target="n11">
+      <data key="key8">3</data>
+    </edge>
+    <edge id="e65" source="n5" target="n12">
+      <data key="key8">3</data>
+    </edge>
+    <edge id="e66" source="n5" target="n13">
+      <data key="key8">1</data>
+    </edge>
+    <edge id="e67" source="n5" target="n14">
+      <data key="key8">4</data>
+    </edge>
+    <edge id="e68" source="n6" target="n7">
+      <data key="key8">1</data>
+    </edge>
+    <edge id="e69" source="n6" target="n10">
+      <data key="key8">5</data>
+    </edge>
+    <edge id="e70" source="n6" target="n11">
+      <data key="key8">3</data>
+    </edge>
+    <edge id="e71" source="n6" target="n12">
+      <data key="key8">1</data>
+    </edge>
+    <edge id="e72" source="n6" target="n13">
+      <data key="key8">3</data>
+    </edge>
+    <edge id="e73" source="n6" target="n14">
+      <data key="key8">3</data>
+    </edge>
+    <edge id="e74" source="n7" target="n8">
+      <data key="key8">1</data>
+    </edge>
+    <edge id="e75" source="n7" target="n9">
+      <data key="key8">1</data>
+    </edge>
+    <edge id="e76" source="n7" target="n10">
+      <data key="key8">1</data>
+    </edge>
+    <edge id="e77" source="n7" target="n11">
+      <data key="key8">1</data>
+    </edge>
+    <edge id="e78" source="n8" target="n9">
+      <data key="key8">6</data>
+    </edge>
+    <edge id="e79" source="n8" target="n10">
+      <data key="key8">9</data>
+    </edge>
+    <edge id="e80" source="n8" target="n11">
+      <data key="key8">1</data>
+    </edge>
+    <edge id="e81" source="n8" target="n14">
+      <data key="key8">2</data>
+    </edge>
+    <edge id="e82" source="n8" target="n16">
+      <data key="key8">1</data>
+    </edge>
+    <edge id="e83" source="n9" target="n10">
+      <data key="key8">8</data>
+    </edge>
+    <edge id="e84" source="n9" target="n11">
+      <data key="key8">1</data>
+    </edge>
+    <edge id="e85" source="n10" target="n11">
+      <data key="key8">1</data>
+    </edge>
+    <edge id="e86" source="n10" target="n12">
+      <data key="key8">2</data>
+    </edge>
+    <edge id="e87" source="n10" target="n14">
+      <data key="key8">5</data>
+    </edge>
+    <edge id="e88" source="n12" target="n13">
+      <data key="key8">1</data>
+    </edge>
+    <edge id="e89" source="n12" target="n14">
+      <data key="key8">3</data>
+    </edge>
+    <edge id="e90" source="n13" target="n14">
+      <data key="key8">1</data>
+    </edge>
+
+  </graph>
+</graphml>

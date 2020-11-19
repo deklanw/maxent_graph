@@ -1,0 +1,10 @@
+[MASTER]
+extension-pkg-whitelist = numpy
+
+[MESSAGES CONTROL]
+enable = F,E,W,R
+disable=old-division,no-absolute-import
+
+[BASIC]
+variable-rgx = ([A-Z])|([a-z_][a-z0-9_]{0,30})$
+argument-rgx = ([A-Z])|([a-z_][a-z0-9_]{0,30})$

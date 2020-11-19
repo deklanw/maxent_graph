@@ -1,207 +1,326 @@
-import warnings
-import itertools
-
-from collections import namedtuple
-
 import numpy as np
-import pandas as pd
 import scipy.optimize
-import igraph as ig
+import pandas as pd
+import math
+import itertools
+import numba
+import time
 
-from numba import jit
+from tqdm import tqdm
 
+import jax.numpy as jnp
+
+from .MaxentGraph import MaxentGraph
+from .util import EPS, jax_class_jit
 from . import poibin
 
 
-SolutionBundle = namedtuple(
-    "SolutionBundle", ["sol", "error", "unique_row_info", "unique_col_info"]
-)
+class BICM(MaxentGraph):
+    def __init__(self, B):
+        self.B = B
+        num_rows, num_cols = B.shape
 
+        self.num_edges = B.count_nonzero()
 
-def initial_guess(option, row_degrees, col_degrees, dseq, multiplicity):
-    if option == 1:
-        x0_rows = row_degrees / np.sqrt(np.sum(row_degrees) + 1)
-        x0_cols = col_degrees / np.sqrt(np.sum(col_degrees) + 1)
-    elif option == 2:
-        x0_rows = row_degrees / np.sqrt(np.sum(row_degrees) + np.sum(col_degrees))
-        x0_cols = col_degrees / np.sqrt(np.sum(row_degrees) + np.sum(col_degrees))
-    elif option == 3:
-        x0_rows = row_degrees / np.sqrt(np.sum(row_degrees) * np.sum(col_degrees))
-        x0_cols = col_degrees / np.sqrt(np.sum(row_degrees) * np.sum(col_degrees))
-    elif option == 4:
-        # ~10% chance
-        x0_rows = np.repeat(1 / 20, len(row_degrees))
-        x0_cols = np.repeat(1 / 20, len(col_degrees))
-    else:
-        raise ValueError(f"Invalid option value. Choose from 1-4.")
+        # since B is a (sparse) matrix, the sums will be matrices
+        # the sums above will give ints, so we need to convert to floats
+        row_sums = np.asarray(np.sum(B, axis=1).astype(np.float64)).flatten()
+        col_sums = np.asarray(np.sum(B, axis=0).astype(np.float64)).flatten()
 
-    x0 = np.concatenate([x0_rows, x0_cols])
+        # assert not np.any(np.where(row_sums == 0))
+        # assert not np.any(np.where(row_sums == len(col_sums)))
+        # assert not np.any(np.where(col_sums == 0))
+        # assert not np.any(np.where(col_sums == len(row_sums)))
 
-    return x0
+        assert len(row_sums) == num_rows
+        assert len(col_sums) == num_cols
+        # since in empirical networks there will be many nodes with the same degree
+        # we can count them and use that information to speed up solving the equations.
+        # the bicm doesn't distinguish between nodes with the same degree.
+        # we also want to keep track of which nodes have which degree (for later). for that we just use pd's groupby
+        row_degrees, row_inverse, row_multiplicity = np.unique(
+            row_sums, return_index=False, return_inverse=True, return_counts=True
+        )
+        row_df = pd.DataFrame(row_sums)
+        self.row_groups = row_df.groupby(by=0).groups
+        self.row_degrees = row_degrees
+        self.row_inverse = row_inverse
+        self.row_multiplicity = row_multiplicity
 
+        col_degrees, col_inverse, col_multiplicity = np.unique(
+            col_sums, return_index=False, return_inverse=True, return_counts=True
+        )
+        col_df = pd.DataFrame(col_sums)
+        self.col_groups = col_df.groupby(by=0).groups
+        self.col_degrees = col_degrees
+        self.col_inverse = col_inverse
+        self.col_multiplicity = col_multiplicity
 
-# much faster with jit
-@jit(nopython=True)
-def equations(xx, dseq, multiplicity, n_row_degrees):
-    eq = -dseq
-    for i in range(n_row_degrees):
-        for j in range(n_row_degrees, len(dseq)):
-            x_ij = xx[i] * xx[j]
-            v = x_ij / (1.0 + x_ij)
-            eq[i] += multiplicity[j] * v
-            eq[j] += multiplicity[i] * v
+        self.n_row_degrees = len(self.row_degrees)
+        self.n_col_degrees = len(self.col_degrees)
+        self.total_unique = self.n_row_degrees + self.n_col_degrees
 
-    return eq
+    def bounds(self):
+        lower_bounds = np.array([EPS] * self.total_unique)
+        upper_bounds = np.array([np.inf] * self.total_unique)
 
-
-def solve_equations(B, method="lm", initial_guess_option=4):
-    num_rows, num_cols = B.shape
-
-    # since B is a (sparse) matrix, the sums will be matrices
-    # the sums above will give ints, so we need to convert to floats
-    row_sums = np.asarray(np.sum(B, axis=1).astype(np.float64)).flatten()
-    col_sums = np.asarray(np.sum(B, axis=0).astype(np.float64)).flatten()
-
-    assert not np.any(np.where(row_sums == 0))
-    assert not np.any(np.where(row_sums == len(col_sums)))
-    assert not np.any(np.where(col_sums == 0))
-    assert not np.any(np.where(col_sums == len(row_sums)))
-
-    assert len(row_sums) == num_rows
-    assert len(col_sums) == num_cols
-
-    # since in empirical networks there will be many nodes with the same degree
-    # we can count them and use that information to speed up solving the equations.
-    # the bicm doesn't distinguish between nodes with the same degree.
-    # we also want to keep track of which nodes have which degree (for later). for that we just use pd's groupby
-    unique_row_info = np.unique(
-        row_sums, return_index=False, return_inverse=True, return_counts=True
-    )
-    row_df = pd.DataFrame(row_sums)
-    row_groups = row_df.groupby(by=0).groups
-    unique_row_info += (row_groups,)
-    row_degrees, rows_inverse, rows_multiplicity, _row_groups = unique_row_info
-
-    unique_col_info = np.unique(
-        col_sums, return_index=False, return_inverse=True, return_counts=True
-    )
-    col_df = pd.DataFrame(col_sums)
-    col_groups = col_df.groupby(by=0).groups
-    unique_col_info += (col_groups,)
-    col_degrees, cols_inverse, cols_multiplicity, _col_groups = unique_col_info
-
-    dseq = np.concatenate([row_degrees, col_degrees])
-    multiplicity = np.concatenate([rows_multiplicity, cols_multiplicity])
-
-    x0 = initial_guess(
-        initial_guess_option, row_degrees, col_degrees, dseq, multiplicity
-    )
-
-    n_row_degrees = len(row_degrees)
-
-    sol = scipy.optimize.root(
-        fun=equations, args=(dseq, multiplicity, n_row_degrees), x0=x0, method=method,
-    )
-
-    error = np.linalg.norm(equations(sol.x, dseq, multiplicity, n_row_degrees), ord=2)
-
-    all_positive = np.all(sol.x > 0)
-
-    # make sure everything makes sense
-    if not (all_positive and sol.success and error < 0.001):
-        raise RuntimeError(
-            "Couldn't find solution with the chosen method and initial guess."
+        return (
+            (lower_bounds, upper_bounds),
+            scipy.optimize.Bounds(lower_bounds, upper_bounds),
         )
 
-    return SolutionBundle(sol, error, unique_row_info, unique_col_info)
+    def order_node_sequence(self):
+        return np.concatenate([self.row_degrees, self.col_degrees])
 
+    def get_initial_guess(self, option=1):
+        if option == 1:
+            x0_rows = self.row_degrees / np.max(self.row_degrees)
+            x0_cols = self.col_degrees / np.max(self.col_degrees)
+        elif option == 2:
+            x0_rows = self.row_degrees / np.sqrt(np.sum(self.row_degrees) + 1)
+            x0_cols = self.col_degrees / np.sqrt(np.sum(self.col_degrees) + 1)
+        elif option == 3:
+            denom = np.sqrt(np.sum(self.row_degrees) * np.sum(self.col_degrees))
 
-def solve_equations_kitchen_sink(B):
-    """
-    Tries every initial guess method and every equation solving method (which is known to work well in these types of problems) to produce the solution with minimum error.
-    Slow. Only recommended if you want the absolute best accuracy.
-    """
-    methods_to_try = ["hybr", "krylov", "broyden2", "anderson", "lm", "df-sane"]
-    initial_guess_options = [1, 2, 3, 4]
-    ComboInfo = namedtuple("ComboInfo", ["method", "initial_guess_option", "error"])
-    best_combo_info = None
+            x0_rows = self.row_degrees / denom
+            x0_cols = self.col_degrees / denom
+        else:
+            raise ValueError("Invalid option value. Choose from 1-3.")
 
-    # some of these will give warnings. we don't care for this kitchen sink
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        for method in methods_to_try:
-            for initial_guess_option in initial_guess_options:
-                try:
-                    sol_bundle = solve_equations(
-                        B, method=method, initial_guess_option=initial_guess_option
-                    )
-                    combo_info = ComboInfo(
-                        method, initial_guess_option, sol_bundle.error
-                    )
-                    if (
-                        best_combo_info is None
-                        or sol_bundle.error < best_combo_info.error
-                    ):
-                        best_combo_info = combo_info
-                except:
-                    pass
+        x0 = np.concatenate([x0_rows, x0_cols])
 
-    if best_combo_info is None:
-        raise RuntimeError(
-            "No combination of initial guess option or equation-solving method worked. Yikes!"
+        return x0
+
+    @jax_class_jit
+    def expected_node_sequence(self, v):
+        x = v[: self.n_row_degrees]
+        y = v[self.n_row_degrees :]
+
+        xy = jnp.outer(x, y)
+        p = xy / (1 + xy)
+
+        # row expected
+        # multiply every row by col_multiplicity then sum across columns
+        row_expected = (p * self.col_multiplicity).sum(axis=1)
+
+        # multiply every column by row_multiplicity then sum across rows
+        col_expected = (p.T * self.row_multiplicity).sum(axis=1)
+
+        return jnp.concatenate((row_expected, col_expected))
+
+    # painstakingly by hand
+    @jax_class_jit
+    def expected_node_sequence_jac(self, v):
+        x = v[: self.n_row_degrees]
+        y = v[self.n_row_degrees :]
+
+        xy = jnp.outer(x, y)
+        t = jnp.power(1 / (1 + xy), 2)
+
+        d_x = (t * y * self.col_multiplicity).sum(axis=1)
+        d_x = jnp.diag(d_x)
+
+        d_y = jnp.outer(self.col_multiplicity, x).T * t
+        u_x = (jnp.outer(self.row_multiplicity, y) * t).T
+
+        u_y = (t.T * x * self.row_multiplicity).sum(axis=1)
+        u_y = jnp.diag(u_y)
+
+        d = jnp.concatenate([d_x, d_y], axis=1)
+        u = jnp.concatenate([u_x, u_y], axis=1)
+        j = jnp.concatenate([d, u], axis=0)
+
+        return j
+
+    def expected_node_sequence_loops(self, v):
+        x = v[: self.n_row_degrees]
+        y = v[self.n_row_degrees :]
+
+        row_expected = np.zeros(self.n_row_degrees)
+        col_expected = np.zeros(self.n_col_degrees)
+
+        for i in range(self.n_row_degrees):
+            for j in range(self.n_col_degrees):
+                x_ij = x[i] * y[j]
+                v = x_ij / (1.0 + x_ij)
+                row_expected[i] += self.col_multiplicity[j] * v
+                col_expected[j] += self.row_multiplicity[i] * v
+
+        return np.concatenate((row_expected, col_expected))
+
+    def neg_log_likelihood_loops(self, v):
+        x = v[: self.n_row_degrees]
+        y = v[self.n_row_degrees :]
+        llhood = 0
+
+        for i in range(self.n_row_degrees):
+            llhood += self.row_degrees[i] * self.row_multiplicity[i] * np.log(x[i])
+
+        for i in range(self.n_col_degrees):
+            llhood += self.col_degrees[i] * self.col_multiplicity[i] * np.log(y[i])
+
+        for i in range(self.n_row_degrees):
+            for j in range(self.n_col_degrees):
+                llhood -= (
+                    self.row_multiplicity[i]
+                    * self.col_multiplicity[j]
+                    * np.log(1 + x[i] * y[j])
+                )
+
+        return -llhood
+
+    @jax_class_jit
+    def neg_log_likelihood(self, v):
+        x = v[: self.n_row_degrees]
+        y = v[self.n_row_degrees :]
+
+        llhood = jnp.sum(self.row_degrees * self.row_multiplicity * jnp.log(x))
+        llhood += jnp.sum(self.col_degrees * self.col_multiplicity * jnp.log(y))
+
+        Q = jnp.log(1 + jnp.outer(x, y))
+        Q = Q * self.col_multiplicity
+        Q = Q.T * self.row_multiplicity
+        # don't need to transpose back because we're summing anyways
+        llhood -= jnp.sum(Q)
+
+        return -llhood
+
+    @jax_class_jit
+    def neg_log_likelihood_grad(self, v):
+        x = v[: self.n_row_degrees]
+        y = v[self.n_row_degrees :]
+
+        xy = jnp.outer(x, y)
+
+        denom = jnp.outer(self.row_multiplicity, self.col_multiplicity) / (1 + xy)
+
+        x_1 = self.row_degrees * self.row_multiplicity / x
+        # sum along columns
+        x_2 = (denom * y).sum(axis=1)
+
+        y_1 = self.col_degrees * self.col_multiplicity / y
+        # sum along rows
+        y_2 = (denom.T * x).sum(axis=1)
+
+        return -jnp.concatenate((x_1 - x_2, y_1 - y_2))
+
+    def get_fitness_model_solution(self):
+        start = time.time()
+        solution = scipy.optimize.root_scalar(
+            self.fitness_zero,
+            args=(
+                self.num_edges,
+                self.row_degrees,
+                self.row_multiplicity,
+                self.col_degrees,
+                self.col_multiplicity,
+            ),
+            method=None,
+            x0=1e-10,
+            x1=0.01,
+            fprime=self.fitness_zero_prime,
+            fprime2=self.fitness_zero_prime_prime,
         )
+        print(f"Fitness model solution took {time.time() - start}")
 
-    print(
-        f"The best initial_guess_option was {best_combo_info.initial_guess_option} and the best equation-solving method was {best_combo_info.method}. The error is {best_combo_info.error}"
-    )
+        z = solution.root
 
-    return sol_bundle
+        return np.sqrt(z) * self.order_node_sequence()
 
+    @staticmethod
+    @numba.jit(nopython=True)
+    def fitness_zero(x, E, row_degrees, row_mult, col_degrees, col_mult):
+        s = -E
+        for i, _ in enumerate(row_degrees):
+            for j, _ in enumerate(col_degrees):
+                kk = row_degrees[i] * col_degrees[j]
+                s += row_mult[i] * col_mult[j] * x * kk / (1 + x * kk)
+        return s
 
-def construct_projection(B, solution_bundle, p_val=0.05):
-    observed_lambda_motif_counts = B @ B.T
+    @staticmethod
+    @numba.jit(nopython=True)
+    def fitness_zero_prime(x, E, row_degrees, row_mult, col_degrees, col_mult):
+        s = 0
+        for i, _ in enumerate(row_degrees):
+            for j, _ in enumerate(col_degrees):
+                kk = row_degrees[i] * col_degrees[j]
+                s += row_mult[i] * col_mult[j] * kk / (1 + x * kk) ** 2
+        return s
 
-    (
-        row_degrees,
-        _rows_inverse,
-        _rows_multiplicity,
-        row_groups,
-    ) = solution_bundle.unique_row_info
+    @staticmethod
+    @numba.jit(nopython=True)
+    def fitness_zero_prime_prime(x, E, row_degrees, row_mult, col_degrees, col_mult):
+        s = 0
+        for i, _ in enumerate(row_degrees):
+            for j, _ in enumerate(col_degrees):
+                kk = row_degrees[i] * col_degrees[j]
+                s += row_mult[i] * col_mult[j] * -2 * kk ** 2 / (1 + x * kk) ** 3
+        return s
 
-    (
-        _col_degrees,
-        cols_inverse,
-        _cols_multiplicity,
-        _col_groups,
-    ) = solution_bundle.unique_col_info
-
-    x = solution_bundle.sol.x
-
-    col_fitnesses = x[len(row_degrees) :][cols_inverse]
-
-    new_A = scipy.sparse.lil_matrix((B.shape[0], B.shape[0]))
-
-    for (i, j) in itertools.combinations(range(len(row_degrees)), 2):
-        fitness_i = x[i]
-        fitness_j = x[j]
-
-        v_i = fitness_i * col_fitnesses
-        v_j = fitness_j * col_fitnesses
+    @staticmethod
+    @numba.jit(nopython=True, parallel=True)
+    def get_probs_with_multiplicity(i, j, x, y):
+        v_i = x[i] * y
+        v_j = x[j] * y
 
         ps_i = v_i / (1 + v_i)
         ps_j = v_j / (1 + v_j)
 
-        expected_lambda_motifs = ps_i * ps_j
-        pmf = poibin.dc_fft_pb(expected_lambda_motifs)
+        expected_lambda_motif_probs = ps_i * ps_j
 
-        degree_i = row_degrees[i]
-        degree_j = row_degrees[j]
+        return expected_lambda_motif_probs
 
-        for orig_i in row_groups[degree_i]:
-            for orig_j in row_groups[degree_j]:
+    def get_projection(self, solution, p_val=0.05):
+        B = self.B
+        # faster indexing when dense. but, more memory. in most cases it won't be sparse so this is fine.
+        # this will be symmetric
+        observed_lambda_motif_counts = (B @ B.T).todense()
+        nonzero_set = set(zip(*observed_lambda_motif_counts.nonzero()))
+
+        print(f"Nonzero lambda-motif counts to check pval of {len(nonzero_set)}")
+        print(f"Total possible pairs: {math.comb(B.shape[0], 2)}")
+
+        x = solution[: self.n_row_degrees]
+        y = solution[self.n_row_degrees :]
+
+        print(f"Unique degrees {(self.n_row_degrees, self.n_col_degrees)}")
+
+        edgelist = []
+        print(
+            f"Total unique row degree pairs to check {math.comb(self.n_row_degrees, 2)}"
+        )
+        for (i, j) in tqdm(itertools.combinations(range(self.n_row_degrees), 2)):
+            degree_i = self.row_degrees[i]
+            degree_j = self.row_degrees[j]
+
+            expected_lambda_motif_probs_with_mult = self.get_probs_with_multiplicity(
+                i, j, x, y
+            )
+
+            mean = poibin.mean_with_multiplicity(
+                expected_lambda_motif_probs_with_mult, self.col_multiplicity
+            )
+
+            # filter zeros to speed up loop
+            # this may slow it down if the number of nonzeros is very dense, but only slightly
+            # if it's sparse then this can substantially speed up
+            to_check = nonzero_set & set(
+                itertools.product(self.row_groups[degree_i], self.row_groups[degree_j])
+            )
+
+            for orig_i, orig_j in to_check:
                 observed = observed_lambda_motif_counts[orig_i, orig_j]
-                p = np.sum(pmf[observed:])
+                assert observed != 0
+                q = poibin.poisson_wh_cdf(observed, mean)
+                p = 1 - q
                 if p < p_val:
-                    new_A[orig_i, orig_j] = -np.log(p)
+                    # the WH approx to the poisson isn't numerically stable this low, nor is the dc_fft
+                    # breaks down in the 1-e14/1e-15 range
+                    if p < 1e-13:
+                        # technically an upper bound on poisson approx, but it keeps close enough for these very small values to get order of magnitude
+                        # and is numerically stable/fast. seems to be stable at least until 1e-300
+                        # certainly NOT low relative error this small, just order of magnitude is right
+                        p = poibin.poisson_upper(observed, mean)
+                    edgelist.append((orig_i, orig_j, -np.log(p)))
 
-    return new_A
+        return edgelist

@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "maxent_graph"
-version = "0.1.0"
-description = "Implementations of some max-entropy graph models. Also has support for statistically-validated one-mode projections of bipartite networks with BiCM."
+version = "0.2.0"
+description = "Implementations of some max-entropy graph models. Also has support for statistically-validated computations with those models, e.g. bipartite projection, weighted backbone."
 authors = ["Deklan Webster <deklanw@gmail.com>"]
 license = "MIT"
 
@@ -12,6 +12,11 @@ numba = "^0.50.1"
 scipy = "^1.5.2"
 python-igraph = "^0.8.2"
 pandas = "^1.1.0"
+jax = "^0.1.77"
+jaxlib = "^0.1.55"
+tabulate = "^0.8.7"
+tqdm = "^4.52.0"
+networkx = "^2.5"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
