@@ -6,7 +6,7 @@ authors = ["Deklan Webster <deklanw@gmail.com>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.7"
 numpy = "^1.19.1"
 numba = "^0.50.1"
 scipy = "^1.5.2"
