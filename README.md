@@ -4,6 +4,7 @@ Supports:
 - Enhanced Configuration Model (ECM) [2]
 - Directed Enhanced Configuration Model (DECM) [2]
 - Bipartite Weighted Configuration Model (BWCM) [3]
+- Bipartite Enhanced Configuration Model (BiECM) [3]
 
 See the `examples` folder for Jupyter notebook examples of usage. There is an example of using BiCM to form a projection of a bipartite network of Senators and bills. And, there is an example of using ECM to filter edges from a graph of relations between Game of Thrones characters.
 

@@ -7,6 +7,7 @@ from maxent_graph.bicm import BICM
 from maxent_graph.decm import DECM
 from maxent_graph.bwcm import BWCM
 from maxent_graph.ecm import ECM
+from maxent_graph.biecm import BIECM
 from maxent_graph.util import nx_get_A, nx_get_B, jax_class_jit
 
 models = [
@@ -22,6 +23,20 @@ models = [
         )
     ),
     BWCM(
+        nx_get_B(
+            "data/plant_pol_vazquez_All_sites_pooled.graphml",
+            weight_key="count",
+            bipartite_key="pollinator",
+        )
+    ),
+    BIECM(
+        nx_get_B(
+            "data/plant_pol_kato.graphml",
+            weight_key="count",
+            bipartite_key="pollinator",
+        )
+    ),
+    BIECM(
         nx_get_B(
             "data/plant_pol_vazquez_All_sites_pooled.graphml",
             weight_key="count",
