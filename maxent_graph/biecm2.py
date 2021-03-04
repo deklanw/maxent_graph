@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import scipy.optimize
 import scipy.sparse as sp
 import math
@@ -43,20 +44,40 @@ R_to_zero_to_one = [
 ]
 
 
-class BIECM(MaxentGraph):
+class BIECM2(MaxentGraph):
     """
     Bipartite enhanced configuration model.
     """
 
     def __init__(self, W, x_transform=0, y_transform=0):
         # validate?
-        self.row_strengths = W.sum(axis=1).getA1().astype(np.float64)
-        self.row_degrees = (W > 0).sum(axis=1).getA1().astype(np.float64)
+        row_strengths = W.sum(axis=1).getA1().astype(np.float64)
+        row_degrees = (W > 0).sum(axis=1).getA1().astype(np.float64)
 
-        self.col_strengths = W.sum(axis=0).getA1().astype(np.float64)
-        self.col_degrees = (W > 0).sum(axis=0).getA1().astype(np.float64)
+        col_strengths = W.sum(axis=0).getA1().astype(np.float64)
+        col_degrees = (W > 0).sum(axis=0).getA1().astype(np.float64)
 
-        self.num_rows, self.num_cols = W.shape
+        row_combinations = np.stack((row_degrees, row_strengths), axis=1)
+        unique_rows, self.row_inverse, self.row_multiplicity = np.unique(
+            row_combinations,
+            return_index=False,
+            return_inverse=True,
+            return_counts=True,
+            axis=0,
+        )
+        self.row_degrees, self.row_strengths = unique_rows[:, 0], unique_rows[:, 1]
+
+        col_combinations = np.stack((col_degrees, col_strengths), axis=1)
+        unique_cols, self.col_inverse, self.col_multiplicity = np.unique(
+            col_combinations,
+            return_index=False,
+            return_inverse=True,
+            return_counts=True,
+            axis=0,
+        )
+        self.col_degrees, self.col_strengths = unique_cols[:, 0], unique_cols[:, 1]
+
+        self.num_rows, self.num_cols = len(unique_rows), len(unique_cols)
         self.num_nodes = self.num_rows + self.num_cols
         self.x_transform, self.x_inv_transform = R_to_zero_to_inf[x_transform]
         self.y_transform, self.y_inv_transform = R_to_zero_to_one[y_transform]
@@ -170,11 +191,11 @@ class BIECM(MaxentGraph):
         degree = xx * yy / (1 - yy + xx * yy)
         strength = degree / (1 - yy)
 
-        avg_row_degree = degree.sum(axis=1)
-        avg_row_strength = strength.sum(axis=1)
+        avg_row_degree = (degree * self.col_multiplicity).sum(axis=1)
+        avg_row_strength = (strength * self.col_multiplicity).sum(axis=1)
 
-        avg_col_degree = degree.sum(axis=0)
-        avg_col_strength = strength.sum(axis=0)
+        avg_col_degree = (degree * self.row_multiplicity[:, None]).sum(axis=0)
+        avg_col_strength = (strength * self.row_multiplicity[:, None]).sum(axis=0)
 
         return jnp.concatenate(
             [avg_row_degree, avg_col_degree, avg_row_strength, avg_col_strength]
@@ -206,11 +227,11 @@ class BIECM(MaxentGraph):
                 degree = xx * yy / (1 - yy + xx * yy)
                 strength = degree / (1 - yy)
 
-                avg_row_degree[i] += degree
-                avg_row_strength[i] += strength
+                avg_row_degree[i] += degree * self.col_multiplicity[j]
+                avg_row_strength[i] += strength * self.col_multiplicity[j]
 
-                avg_col_degree[j] += degree
-                avg_col_strength[j] += strength
+                avg_col_degree[j] += degree * self.row_multiplicity[i]
+                avg_col_strength[j] += strength * self.row_multiplicity[i]
 
         return np.concatenate(
             [avg_row_degree, avg_col_degree, avg_row_strength, avg_col_strength]
@@ -227,19 +248,25 @@ class BIECM(MaxentGraph):
         y_col = z[(2 * self.num_rows + self.num_cols) :]
 
         for i in range(self.num_rows):
-            llhood += self.row_degrees[i] * np.log(x_row[i])
-            llhood += self.row_strengths[i] * np.log(y_row[i])
+            llhood += self.row_multiplicity[i] * self.row_degrees[i] * np.log(x_row[i])
+            llhood += (
+                self.row_multiplicity[i] * self.row_strengths[i] * np.log(y_row[i])
+            )
 
         for j in range(self.num_cols):
-            llhood += self.col_degrees[j] * np.log(x_col[j])
-            llhood += self.col_strengths[j] * np.log(y_col[j])
+            llhood += self.col_multiplicity[j] * self.col_degrees[j] * np.log(x_col[j])
+            llhood += (
+                self.col_multiplicity[j] * self.col_strengths[j] * np.log(y_col[j])
+            )
 
         for i in range(self.num_rows):
             for j in range(self.num_cols):
                 xx = x_row[i] * x_col[j]
                 yy = y_row[i] * y_col[j]
                 t = (1 - yy) / (1 - yy + xx * yy)
-                llhood += np.log(t)
+                llhood += (
+                    self.row_multiplicity[i] * self.col_multiplicity[j] * np.log(t)
+                )
 
         return -llhood
 
@@ -254,17 +281,18 @@ class BIECM(MaxentGraph):
         y_row = z[(self.num_rows + self.num_cols) : (2 * self.num_rows + self.num_cols)]
         y_col = z[(2 * self.num_rows + self.num_cols) :]
 
-        llhood += jnp.sum(self.row_degrees * jnp.log(x_row))
-        llhood += jnp.sum(self.row_strengths * jnp.log(y_row))
+        llhood += jnp.sum(self.row_multiplicity * self.row_degrees * jnp.log(x_row))
+        llhood += jnp.sum(self.row_multiplicity * self.row_strengths * jnp.log(y_row))
 
-        llhood += jnp.sum(self.col_degrees * jnp.log(x_col))
-        llhood += jnp.sum(self.col_strengths * jnp.log(y_col))
+        llhood += jnp.sum(self.col_multiplicity * self.col_degrees * jnp.log(x_col))
+        llhood += jnp.sum(self.col_multiplicity * self.col_strengths * jnp.log(y_col))
 
         xx = jnp.outer(x_row, x_col)
         yy = jnp.outer(y_row, y_col)
 
         t = (1 - yy) / (1 - yy + xx * yy)
-        llhood += jnp.sum(jnp.log(t))
+        Q = jnp.log(t)
+        llhood += jnp.sum(self.col_multiplicity * Q * self.row_multiplicity[:, None])
 
         return -llhood
 
@@ -286,24 +314,44 @@ class BIECM(MaxentGraph):
         nonzero = W.nonzero()
         nonzero_values = W[nonzero].getA1()
 
+        # do loops with numba for efficiency
         @numba.jit(nopython=True)
         def inner_loop(
-            nonzero, nonzero_values, x_row, x_col, y_row, y_col,
+            nonzero,
+            nonzero_values,
+            x_row,
+            x_col,
+            y_row,
+            y_col,
+            row_inverse,
+            col_inverse,
         ):
             new_values = []
 
             for i, j, w in zip(*nonzero, nonzero_values):
-                xx = x_row[i] * x_col[j]
-                yy = y_row[i] * y_col[j]
+                i_star = row_inverse[i]
+                j_star = col_inverse[j]
+
+                xx = x_row[i_star] * x_col[j_star]
+                yy = y_row[i_star] * y_col[j_star]
                 pij = xx * yy / (1 - yy + xx * yy)
 
                 # probability this weight would be at least this large, given null model
-                p_val = pij * np.power(y_row[i] * y_col[j], w - 1)
+                p_val = pij * np.power(y_row[i_star] * y_col[j_star], w - 1)
                 new_values.append(p_val)
 
             return new_values
 
-        new_values = inner_loop(nonzero, nonzero_values, x_row, x_col, y_row, y_col,)
+        new_values = inner_loop(
+            nonzero,
+            nonzero_values,
+            x_row,
+            x_col,
+            y_row,
+            y_col,
+            self.row_inverse,
+            self.col_inverse,
+        )
 
         W_new = sp.coo_matrix((new_values, nonzero))
 

@@ -108,9 +108,19 @@ class MaxentGraph(ABC):
         negative log-likelihood or bounded least-squares minimization of the equation residuals.
         """
 
+        args = {}
+
+        # for some reason scipy prefers hess over hessp if the former is passed
+        # but since the latter is more efficient, only pass hess when necessary
+        if method in ["trust-exact", "dogleg"]:
+            hess = jit(jacfwd(jacrev(self.neg_log_likelihood)))
+            args["hess"] = hess
+
         if method in ["trf", "dogbox", "lm"]:
             f = self.node_sequence_residuals
             jac = jit(jacrev(self.expected_node_sequence))
+            args["jac"] = jac
+
             solver = scipy.optimize.least_squares
         elif method in [
             "Nelder-Mead",
@@ -136,19 +146,16 @@ class MaxentGraph(ABC):
             if method in ["L-BFGS-B"]:
                 jac = wrap_with_array(jac)
 
+            hessp = jit(hvp(self.neg_log_likelihood))
+            args["hessp"] = hessp
+            args["jac"] = jac
+
             solver = scipy.optimize.minimize
         else:
             assert False
 
-        hess = jit(jacfwd(jacrev(self.neg_log_likelihood)))
-        hessp = jit(hvp(self.neg_log_likelihood))
-
-        # for some reason scipy prefers hess over hessp if the former is passed
-        # but since the latter is more efficient, only pass hess when necessary
-        hess_or_none = hess if method in ["trust-exact", "dogleg"] else None
-
         start = time.time()
-        sol = solver(f, x0=x0, method=method, jac=jac, hessp=hessp, hess=hess_or_none)
+        sol = solver(f, x0=x0, method=method, **args)
         end = time.time()
 
         total_time = end - start
