@@ -9,8 +9,10 @@ from collections import namedtuple
 
 import numpy as np
 import scipy.optimize
+from jax import jit, jacfwd, jacrev, grad
 
-from .util import wrap_with_array, print_percentiles, jax_class_jit
+
+from .util import wrap_with_array, print_percentiles, jax_class_jit, hvp
 
 Solution = namedtuple(
     "Solution", ["x", "nll", "residual_error_norm", "relative_error", "total_time"]
@@ -106,24 +108,47 @@ class MaxentGraph(ABC):
         negative log-likelihood or bounded least-squares minimization of the equation residuals.
         """
 
-        bounds_tuple, bounds_object = self.bounds()
-
-        if method in ["trf", "dogbox"]:
+        if method in ["trf", "dogbox", "lm"]:
             f = self.node_sequence_residuals
-            jac = self.expected_node_sequence_jac
+            jac = jit(jacrev(self.expected_node_sequence))
             solver = scipy.optimize.least_squares
-            bounds = bounds_tuple
-        elif method in ["L-BFGS-B", "TNC", "SLSQP"]:
+        elif method in [
+            "Nelder-Mead",
+            "Powell",
+            "CG",
+            "BFGS",
+            "Newton-CG",
+            "L-BFGS-B",
+            "TNC",
+            "COBYLA",
+            "SLSQP",
+            "trust-constr",
+            "dogleg",
+            "trust-ncg",
+            "trust-exact",
+            "trust-krylov",
+        ]:
             f = self.neg_log_likelihood
+            jac = jit(grad(self.neg_log_likelihood))
+
             # lbfgsb is fussy. wont accept jax's devicearray
-            jac = wrap_with_array(self.neg_log_likelihood_grad)
+            # there may be others, though
+            if method in ["L-BFGS-B"]:
+                jac = wrap_with_array(jac)
+
             solver = scipy.optimize.minimize
-            bounds = bounds_object
         else:
             assert False
 
+        hess = jit(jacfwd(jacrev(self.neg_log_likelihood)))
+        hessp = jit(hvp(self.neg_log_likelihood))
+
+        # for some reason scipy prefers hess over hessp if the former is passed
+        # but since the latter is more efficient, only pass hess when necessary
+        hess_or_none = hess if method in ["trust-exact", "dogleg"] else None
+
         start = time.time()
-        sol = solver(f, x0=x0, method=method, jac=jac, bounds=bounds)
+        sol = solver(f, x0=x0, method=method, jac=jac, hessp=hessp, hess=hess_or_none)
         end = time.time()
 
         total_time = end - start

@@ -5,14 +5,11 @@ Just some utilities.
 import jax
 import numpy as np
 import jax.numpy as jnp
-import itertools
-import scipy
 import networkx as nx
 from networkx.algorithms import bipartite
 from tabulate import tabulate
 from functools import partial
-from collections import Counter
-from numba import jit
+from jax import jvp, grad
 
 
 EPS = np.finfo(float).eps
@@ -81,3 +78,12 @@ def nx_get_B(fn, weight_key=None, bipartite_key=None):
         g, bottom_nodes, top_nodes, dtype=None, weight=weight_key, format="csr"
     )
     return B
+
+
+def hvp(f):
+    """
+    Hessian-vector-product
+
+    # https://jax.readthedocs.io/en/latest/notebooks/autodiff_cookbook.html#hessian-vector-products-using-both-forward-and-reverse-mode
+    """
+    return lambda x, v: jvp(grad(f), (x,), (v,))[1]

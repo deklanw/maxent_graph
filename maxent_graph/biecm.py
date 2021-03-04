@@ -4,9 +4,42 @@ import scipy.sparse
 import math
 
 import jax.numpy as jnp
+import jax
+from jax import jit
 
 from .MaxentGraph import MaxentGraph
 from .util import EPS, jax_class_jit
+
+
+### R <=> (0, inf) homeomorphisms
+@jit
+def softplus_inv(x):
+    return jnp.log(jnp.exp(x) - 1)
+
+
+R_to_zero_to_inf = [(jit(jnp.exp), jit(jnp.log)), (jit(jax.nn.softplus), softplus_inv)]
+
+### R <=> (0,1) homeomorphisms
+@jit
+def shift_scale_arctan(x):
+    # scaled, shifted arctan
+    return (1 / jnp.pi) * jnp.arctan(x) + 1 / 2
+
+
+@jit
+def shift_scale_arctan_inv(x):
+    return jnp.tan(jnp.pi * (x - 1 / 2))
+
+
+@jit
+def sigmoid_inv(x):
+    return -jnp.log(1 / x - 1)
+
+
+R_to_zero_to_one = [
+    (jit(jax.nn.sigmoid), sigmoid_inv),
+    (shift_scale_arctan, shift_scale_arctan_inv),
+]
 
 
 class BIECM(MaxentGraph):
@@ -14,7 +47,7 @@ class BIECM(MaxentGraph):
     Bipartite enhanced configuration model.
     """
 
-    def __init__(self, W):
+    def __init__(self, W, x_transform=0, y_transform=0):
         # validate?
         self.row_strengths = W.sum(axis=1).getA1().astype(np.float64)
         self.row_degrees = (W > 0).sum(axis=1).getA1().astype(np.float64)
@@ -24,9 +57,10 @@ class BIECM(MaxentGraph):
 
         self.num_rows, self.num_cols = W.shape
         self.num_nodes = self.num_rows + self.num_cols
+        self.x_transform, self.x_inv_transform = R_to_zero_to_inf[x_transform]
+        self.y_transform, self.y_inv_transform = R_to_zero_to_one[y_transform]
 
     def bounds(self):
-
         lower_bounds = np.array([EPS] * 2 * self.num_nodes)
         upper_bounds = np.array([np.inf] * self.num_nodes + [1 - EPS] * self.num_nodes)
         return (
@@ -38,6 +72,20 @@ class BIECM(MaxentGraph):
         return np.concatenate(
             [self.row_degrees, self.col_degrees, self.row_strengths, self.col_strengths]
         )
+
+    @jax_class_jit
+    def transform_parameters(self, v):
+        x = v[: self.num_nodes]
+        y = v[self.num_nodes :]
+
+        return jnp.concatenate((self.x_transform(x), self.y_transform(y)))
+
+    @jax_class_jit
+    def transform_parameters_inv(self, v):
+        x = v[: self.num_nodes]
+        y = v[self.num_nodes :]
+
+        return jnp.concatenate((self.x_inv_transform(x), self.y_inv_transform(y)))
 
     def get_initial_guess(self, option=5):
         """
@@ -62,41 +110,52 @@ class BIECM(MaxentGraph):
                 )
             )
         elif option == 5:
-            total_weight = self.row_strengths.sum()
+            row_strength_per_degree = self.row_strengths / (1 + self.row_degrees)
+            col_strength_per_degree = self.col_strengths / (1 + self.col_degrees)
 
             initial_guess = self.clip(
                 np.concatenate(
                     [
-                        self.row_degrees / num_edges,
-                        self.col_degrees / num_edges,
-                        self.row_strengths / total_weight,
-                        self.col_strengths / total_weight,
+                        self.row_degrees / math.sqrt(num_edges),
+                        self.col_degrees / math.sqrt(num_edges),
+                        row_strength_per_degree / (row_strength_per_degree.max() + 1),
+                        col_strength_per_degree / (col_strength_per_degree.max() + 1),
                     ]
                 )
             )
         elif option == 6:
-            total_weight = self.row_strengths.sum()
             initial_guess = self.clip(
                 np.concatenate(
                     [
-                        self.row_degrees / self.row_degrees.max(),
-                        self.col_degrees / self.col_degrees.max(),
-                        self.row_strengths / total_weight,
-                        self.col_strengths / total_weight,
+                        self.row_degrees / math.sqrt(num_edges),
+                        self.col_degrees / math.sqrt(num_edges),
+                        np.repeat(0.10, self.num_nodes),
+                    ]
+                )
+            )
+        elif option == 7:
+            initial_guess = self.clip(
+                np.concatenate(
+                    [
+                        self.row_degrees / math.sqrt(num_edges),
+                        self.col_degrees / math.sqrt(num_edges),
+                        np.repeat(0.01, self.num_nodes),
                     ]
                 )
             )
         else:
-            raise ValueError("Invalid option value. Choose from 1-6.")
+            raise ValueError("Invalid option value. Choose from 1-4.")
 
-        return initial_guess
+        return self.transform_parameters_inv(initial_guess)
 
     @jax_class_jit
     def expected_node_sequence(self, v):
-        x_row = v[: self.num_rows]
-        x_col = v[self.num_rows : (self.num_rows + self.num_cols)]
-        y_row = v[(self.num_rows + self.num_cols) : (2 * self.num_rows + self.num_cols)]
-        y_col = v[(2 * self.num_rows + self.num_cols) :]
+        z = self.transform_parameters(v)
+
+        x_row = z[: self.num_rows]
+        x_col = z[self.num_rows : (self.num_rows + self.num_cols)]
+        y_row = z[(self.num_rows + self.num_cols) : (2 * self.num_rows + self.num_cols)]
+        y_col = z[(2 * self.num_rows + self.num_cols) :]
 
         avg_row_degree = jnp.zeros(self.num_rows)
         avg_col_degree = jnp.zeros(self.num_cols)
@@ -122,86 +181,15 @@ class BIECM(MaxentGraph):
 
     @jax_class_jit
     def expected_node_sequence_jac(self, v):
-        """
-        Using this little trick to multiply a vector with a matrix column-wise:
-        A * b[:, None]
-
-        https://stackoverflow.com/a/45895371/4749956
-
-        """
-
-        x_row = v[: self.num_rows]
-        x_col = v[self.num_rows : (self.num_rows + self.num_cols)]
-        y_row = v[(self.num_rows + self.num_cols) : (2 * self.num_rows + self.num_cols)]
-        y_col = v[(2 * self.num_rows + self.num_cols) :]
-
-        xx = jnp.outer(x_row, x_col)
-        yy = jnp.outer(y_row, y_col)
-
-        inv_denom = jnp.power(1 / (yy * (xx - 1) + 1), 2)
-
-        m1 = x_col * yy * (1 - yy) * inv_denom
-        d_k_row_x_row = jnp.diag(jnp.sum(m1, axis=1))
-
-        d_k_row_x_col = x_row[:, None] * yy * (1 - yy) * inv_denom
-
-        m3 = xx * y_col * inv_denom
-        d_k_row_y_row = jnp.diag(jnp.sum(m3, axis=1))
-
-        d_k_row_y_col = xx * y_row[:, None] * inv_denom
-
-        first_row_block = jnp.concatenate(
-            (d_k_row_x_row, d_k_row_x_col, d_k_row_y_row, d_k_row_y_col), axis=1
-        )
-
-        d_k_col_x_row = m1.T
-        d_k_col_x_col = jnp.diag(jnp.sum(d_k_row_x_col, axis=0))
-        d_k_col_y_row = m3.T
-        d_k_col_y_col = jnp.diag(jnp.sum(d_k_row_y_col, axis=0))
-
-        second_row_block = jnp.concatenate(
-            (d_k_col_x_row, d_k_col_x_col, d_k_col_y_row, d_k_col_y_col), axis=1
-        )
-
-        m5 = yy * x_col * inv_denom
-        d_s_row_x_row = jnp.diag(jnp.sum(m5, axis=1))
-
-        d_s_row_x_col = yy * x_row[:, None] * inv_denom
-
-        inv_denom2 = jnp.power(1 / (yy - 1), 2) * inv_denom
-
-        m7 = xx * (y_row[:, None] * yy * y_col * y_col * (xx - 1) + y_col) * inv_denom2
-        d_s_row_y_row = jnp.diag(jnp.sum(m7, axis=1))
-
-        d_s_row_y_col = (
-            xx
-            * (y_row[:, None] * y_row[:, None] * yy * y_col * (xx - 1) + y_row[:, None])
-            * inv_denom2
-        )
-
-        third_row_block = jnp.concatenate(
-            (d_s_row_x_row, d_s_row_x_col, d_s_row_y_row, d_s_row_y_col), axis=1
-        )
-
-        d_s_col_x_row = m5.T
-        d_s_col_x_col = jnp.diag(jnp.sum(d_s_row_x_col, axis=0))
-        d_s_col_y_row = m7.T
-        d_s_col_y_col = jnp.diag(jnp.sum(d_s_row_y_col, axis=0))
-
-        fourth_row_block = jnp.concatenate(
-            (d_s_col_x_row, d_s_col_x_col, d_s_col_y_row, d_s_col_y_col), axis=1
-        )
-
-        return jnp.concatenate(
-            (first_row_block, second_row_block, third_row_block, fourth_row_block),
-            axis=0,
-        )
+        ...
 
     def expected_node_sequence_loops(self, v):
-        x_row = v[: self.num_rows]
-        x_col = v[self.num_rows : (self.num_rows + self.num_cols)]
-        y_row = v[(self.num_rows + self.num_cols) : (2 * self.num_rows + self.num_cols)]
-        y_col = v[(2 * self.num_rows + self.num_cols) :]
+        z = self.transform_parameters_inv(v)
+
+        x_row = z[: self.num_rows]
+        x_col = z[self.num_rows : (self.num_rows + self.num_cols)]
+        y_row = z[(self.num_rows + self.num_cols) : (2 * self.num_rows + self.num_cols)]
+        y_col = z[(2 * self.num_rows + self.num_cols) :]
 
         avg_row_degree = np.zeros(self.num_rows)
         avg_col_degree = np.zeros(self.num_cols)
@@ -228,12 +216,14 @@ class BIECM(MaxentGraph):
         )
 
     def neg_log_likelihood_loops(self, v):
+        z = self.transform_parameters(v)
+
         llhood = 0
 
-        x_row = v[: self.num_rows]
-        x_col = v[self.num_rows : (self.num_rows + self.num_cols)]
-        y_row = v[(self.num_rows + self.num_cols) : (2 * self.num_rows + self.num_cols)]
-        y_col = v[(2 * self.num_rows + self.num_cols) :]
+        x_row = z[: self.num_rows]
+        x_col = z[self.num_rows : (self.num_rows + self.num_cols)]
+        y_row = z[(self.num_rows + self.num_cols) : (2 * self.num_rows + self.num_cols)]
+        y_col = z[(2 * self.num_rows + self.num_cols) :]
 
         for i in range(self.num_rows):
             llhood += self.row_degrees[i] * np.log(x_row[i])
@@ -254,12 +244,14 @@ class BIECM(MaxentGraph):
 
     @jax_class_jit
     def neg_log_likelihood(self, v):
+        z = self.transform_parameters(v)
+
         llhood = 0
 
-        x_row = v[: self.num_rows]
-        x_col = v[self.num_rows : (self.num_rows + self.num_cols)]
-        y_row = v[(self.num_rows + self.num_cols) : (2 * self.num_rows + self.num_cols)]
-        y_col = v[(2 * self.num_rows + self.num_cols) :]
+        x_row = z[: self.num_rows]
+        x_col = z[self.num_rows : (self.num_rows + self.num_cols)]
+        y_row = z[(self.num_rows + self.num_cols) : (2 * self.num_rows + self.num_cols)]
+        y_col = z[(2 * self.num_rows + self.num_cols) :]
 
         llhood += jnp.sum(self.row_degrees * jnp.log(x_row))
         llhood += jnp.sum(self.row_strengths * jnp.log(y_row))
@@ -277,37 +269,15 @@ class BIECM(MaxentGraph):
 
     @jax_class_jit
     def neg_log_likelihood_grad(self, v):
-        x_row = v[: self.num_rows]
-        x_col = v[self.num_rows : (self.num_rows + self.num_cols)]
-        y_row = v[(self.num_rows + self.num_cols) : (2 * self.num_rows + self.num_cols)]
-        y_col = v[(2 * self.num_rows + self.num_cols) :]
-
-        xx = jnp.outer(x_row, x_col)
-        yy = jnp.outer(y_row, y_col)
-
-        denom = 1 - yy + xx * yy
-
-        m1 = (x_col * yy) / denom
-        m2 = (x_row[:, None] * yy) / denom
-
-        d_x_row = self.row_degrees / x_row - jnp.sum(m1, axis=1)
-        d_x_col = self.col_degrees / x_col - jnp.sum(m2, axis=0)
-
-        m3 = -y_col * (1 / (1 - yy))
-        m4 = (-y_col + xx * y_col) / denom
-        d_y_row = self.row_strengths / y_row + jnp.sum(m3, axis=1) - jnp.sum(m4, axis=1)
-
-        m5 = -y_row[:, None] * (1 / (1 - yy))
-        m6 = (-y_row[:, None] + xx * y_row[:, None]) / denom
-        d_y_col = self.col_strengths / y_col + jnp.sum(m5, axis=0) - jnp.sum(m6, axis=0)
-
-        return -jnp.concatenate((d_x_row, d_x_col, d_y_row, d_y_col))
+        ...
 
     def get_pval_matrix(self, v, W):
-        x_row = v[: self.num_rows]
-        x_col = v[self.num_rows : (self.num_rows + self.num_cols)]
-        y_row = v[(self.num_rows + self.num_cols) : (2 * self.num_rows + self.num_cols)]
-        y_col = v[(2 * self.num_rows + self.num_cols) :]
+        z = self.transform_parameters(v)
+
+        x_row = z[: self.num_rows]
+        x_col = z[self.num_rows : (self.num_rows + self.num_cols)]
+        y_row = z[(self.num_rows + self.num_cols) : (2 * self.num_rows + self.num_cols)]
+        y_col = z[(2 * self.num_rows + self.num_cols) :]
 
         # only need one triangle since symmetric
         # convert to lil for fast index assignment
