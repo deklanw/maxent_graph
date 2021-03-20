@@ -94,7 +94,7 @@ class BICM(MaxentGraph):
         else:
             raise ValueError("Invalid option value. Choose from 1-3.")
 
-        initial_guess = np.concatenate([x0_rows, x0_cols])
+        initial_guess = self.clip(np.concatenate([x0_rows, x0_cols]))
 
         return self.transform_parameters_inv(initial_guess)
 
