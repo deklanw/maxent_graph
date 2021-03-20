@@ -12,11 +12,11 @@ numba = "^0.50.1"
 scipy = "^1.5.2"
 python-igraph = "^0.8.2"
 pandas = "^1.1.0"
-jax = "^0.1.77"
-jaxlib = "^0.1.55"
 tabulate = "^0.8.7"
 tqdm = "^4.52.0"
 networkx = "^2.5"
+jax = "^0.2.10"
+jaxlib = "^0.1.64"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

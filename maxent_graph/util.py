@@ -9,7 +9,7 @@ import networkx as nx
 from networkx.algorithms import bipartite
 from tabulate import tabulate
 from functools import partial
-from jax import jvp, grad
+from jax import jvp, grad, jit
 
 
 EPS = np.finfo(float).eps
@@ -62,6 +62,11 @@ def nx_get_A(fn, weight_key=None):
 def nx_get_B(fn, weight_key=None, bipartite_key=None):
     g = nx.read_graphml(fn)
 
+    # ensure graph is connected
+    components = sorted(nx.connected_components(g), key=len, reverse=True)
+    largest_component = components[0]
+    g = g.subgraph(largest_component)
+
     assert nx.is_bipartite(g)
 
     if bipartite_key is None:
@@ -87,3 +92,34 @@ def hvp(f):
     # https://jax.readthedocs.io/en/latest/notebooks/autodiff_cookbook.html#hessian-vector-products-using-both-forward-and-reverse-mode
     """
     return lambda x, v: jvp(grad(f), (x,), (v,))[1]
+
+
+### R <=> (0, inf) homeomorphisms
+@jit
+def softplus_inv(x):
+    return jnp.log(jnp.exp(x) - 1)
+
+
+R_to_zero_to_inf = [(jit(jnp.exp), jit(jnp.log)), (jit(jax.nn.softplus), softplus_inv)]
+
+### R <=> (0,1) homeomorphisms
+@jit
+def shift_scale_arctan(x):
+    # scaled, shifted arctan
+    return (1 / jnp.pi) * jnp.arctan(x) + 1 / 2
+
+
+@jit
+def shift_scale_arctan_inv(x):
+    return jnp.tan(jnp.pi * (x - 1 / 2))
+
+
+@jit
+def sigmoid_inv(x):
+    return -jnp.log(1 / x - 1)
+
+
+R_to_zero_to_one = [
+    (jit(jax.nn.sigmoid), sigmoid_inv),
+    (shift_scale_arctan, shift_scale_arctan_inv),
+]

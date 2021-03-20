@@ -11,12 +11,12 @@ from tqdm import tqdm
 import jax.numpy as jnp
 
 from .MaxentGraph import MaxentGraph
-from .util import EPS, jax_class_jit
+from .util import EPS, jax_class_jit, R_to_zero_to_inf
 from . import poibin
 
 
 class BICM(MaxentGraph):
-    def __init__(self, B):
+    def __init__(self, B, transform=0):
         self.B = B
         num_rows, num_cols = B.shape
 
@@ -27,13 +27,9 @@ class BICM(MaxentGraph):
         row_sums = np.asarray(np.sum(B, axis=1).astype(np.float64)).flatten()
         col_sums = np.asarray(np.sum(B, axis=0).astype(np.float64)).flatten()
 
-        # assert not np.any(np.where(row_sums == 0))
-        # assert not np.any(np.where(row_sums == len(col_sums)))
-        # assert not np.any(np.where(col_sums == 0))
-        # assert not np.any(np.where(col_sums == len(row_sums)))
-
         assert len(row_sums) == num_rows
         assert len(col_sums) == num_cols
+
         # since in empirical networks there will be many nodes with the same degree
         # we can count them and use that information to speed up solving the equations.
         # the bicm doesn't distinguish between nodes with the same degree.
@@ -60,6 +56,8 @@ class BICM(MaxentGraph):
         self.n_col_degrees = len(self.col_degrees)
         self.total_unique = self.n_row_degrees + self.n_col_degrees
 
+        self.transform, self.inv_transform = R_to_zero_to_inf[transform]
+
     def bounds(self):
         lower_bounds = np.array([EPS] * self.total_unique)
         upper_bounds = np.array([np.inf] * self.total_unique)
@@ -71,6 +69,15 @@ class BICM(MaxentGraph):
 
     def order_node_sequence(self):
         return np.concatenate([self.row_degrees, self.col_degrees])
+
+
+    @jax_class_jit
+    def transform_parameters(self, v):
+        return self.transform(v)
+
+    @jax_class_jit
+    def transform_parameters_inv(self, v):
+        return self.inv_transform(v)
 
     def get_initial_guess(self, option=1):
         if option == 1:
@@ -87,14 +94,16 @@ class BICM(MaxentGraph):
         else:
             raise ValueError("Invalid option value. Choose from 1-3.")
 
-        x0 = np.concatenate([x0_rows, x0_cols])
+        initial_guess = np.concatenate([x0_rows, x0_cols])
 
-        return x0
+        return self.transform_parameters_inv(initial_guess)
 
     @jax_class_jit
     def expected_node_sequence(self, v):
-        x = v[: self.n_row_degrees]
-        y = v[self.n_row_degrees :]
+        z = self.transform_parameters(v)
+
+        x = z[: self.n_row_degrees]
+        y = z[self.n_row_degrees :]
 
         xy = jnp.outer(x, y)
         p = xy / (1 + xy)
@@ -108,33 +117,11 @@ class BICM(MaxentGraph):
 
         return jnp.concatenate((row_expected, col_expected))
 
-    # painstakingly by hand
-    @jax_class_jit
-    def expected_node_sequence_jac(self, v):
-        x = v[: self.n_row_degrees]
-        y = v[self.n_row_degrees :]
-
-        xy = jnp.outer(x, y)
-        t = jnp.power(1 / (1 + xy), 2)
-
-        d_x = (t * y * self.col_multiplicity).sum(axis=1)
-        d_x = jnp.diag(d_x)
-
-        d_y = jnp.outer(self.col_multiplicity, x).T * t
-        u_x = (jnp.outer(self.row_multiplicity, y) * t).T
-
-        u_y = (t.T * x * self.row_multiplicity).sum(axis=1)
-        u_y = jnp.diag(u_y)
-
-        d = jnp.concatenate([d_x, d_y], axis=1)
-        u = jnp.concatenate([u_x, u_y], axis=1)
-        j = jnp.concatenate([d, u], axis=0)
-
-        return j
-
     def expected_node_sequence_loops(self, v):
-        x = v[: self.n_row_degrees]
-        y = v[self.n_row_degrees :]
+        z = self.transform_parameters(v)
+
+        x = z[: self.n_row_degrees]
+        y = z[self.n_row_degrees :]
 
         row_expected = np.zeros(self.n_row_degrees)
         col_expected = np.zeros(self.n_col_degrees)
@@ -149,8 +136,10 @@ class BICM(MaxentGraph):
         return np.concatenate((row_expected, col_expected))
 
     def neg_log_likelihood_loops(self, v):
-        x = v[: self.n_row_degrees]
-        y = v[self.n_row_degrees :]
+        z = self.transform_parameters(v)
+
+        x = z[: self.n_row_degrees]
+        y = z[self.n_row_degrees :]
         llhood = 0
 
         for i in range(self.n_row_degrees):
@@ -171,8 +160,10 @@ class BICM(MaxentGraph):
 
     @jax_class_jit
     def neg_log_likelihood(self, v):
-        x = v[: self.n_row_degrees]
-        y = v[self.n_row_degrees :]
+        z = self.transform_parameters(v)
+
+        x = z[: self.n_row_degrees]
+        y = z[self.n_row_degrees :]
 
         llhood = jnp.sum(self.row_degrees * self.row_multiplicity * jnp.log(x))
         llhood += jnp.sum(self.col_degrees * self.col_multiplicity * jnp.log(y))
@@ -185,26 +176,10 @@ class BICM(MaxentGraph):
 
         return -llhood
 
-    @jax_class_jit
-    def neg_log_likelihood_grad(self, v):
-        x = v[: self.n_row_degrees]
-        y = v[self.n_row_degrees :]
-
-        xy = jnp.outer(x, y)
-
-        denom = jnp.outer(self.row_multiplicity, self.col_multiplicity) / (1 + xy)
-
-        x_1 = self.row_degrees * self.row_multiplicity / x
-        # sum along columns
-        x_2 = (denom * y).sum(axis=1)
-
-        y_1 = self.col_degrees * self.col_multiplicity / y
-        # sum along rows
-        y_2 = (denom.T * x).sum(axis=1)
-
-        return -jnp.concatenate((x_1 - x_2, y_1 - y_2))
-
     def get_fitness_model_solution(self):
+        '''
+        Just a good initial guess based on the 'fitness' assumption
+        '''
         start = time.time()
         solution = scipy.optimize.root_scalar(
             self.fitness_zero,
@@ -225,7 +200,7 @@ class BICM(MaxentGraph):
 
         z = solution.root
 
-        return np.sqrt(z) * self.order_node_sequence()
+        return self.inv_transform(np.sqrt(z) * self.order_node_sequence())
 
     @staticmethod
     @numba.jit(nopython=True)
@@ -280,8 +255,10 @@ class BICM(MaxentGraph):
         print(f"Nonzero lambda-motif counts to check pval of {len(nonzero_set)}")
         print(f"Total possible pairs: {math.comb(B.shape[0], 2)}")
 
-        x = solution[: self.n_row_degrees]
-        y = solution[self.n_row_degrees :]
+        z = self.transform(solution)
+
+        x = z[: self.n_row_degrees]
+        y = z[self.n_row_degrees :]
 
         print(f"Unique degrees {(self.n_row_degrees, self.n_col_degrees)}")
 

@@ -56,13 +56,6 @@ class MaxentGraph(ABC):
         """
 
     @abstractmethod
-    def expected_node_sequence_jac(self, v):
-        """
-        Computes the Jacobian of the expected node constraint using matrices.
-        Since the actual node sequence is constant, we can ignore it for the Jacobian.
-        """
-
-    @abstractmethod
     def expected_node_sequence_loops(self, v):
         """
         Computes the expected node constraint using loops.
@@ -86,13 +79,6 @@ class MaxentGraph(ABC):
         """
         Computes the negative log-likelihood using matrix operations.
         """
-
-    @abstractmethod
-    def neg_log_likelihood_grad(self, v):
-        """
-        Computes the gradient of the negative log-likelihood using matrix operations.
-        """
-
     def compute_relative_error(self, expected):
         """
         Computes relative error for solution for every element of the sequence.
@@ -102,7 +88,7 @@ class MaxentGraph(ABC):
         # okay not actually relative error but close enough
         return np.abs(expected - actual) / (1 + np.abs(actual))
 
-    def solve(self, x0, method="TNC", verbose=False):
+    def solve(self, x0, method="trust-krylov", verbose=False):
         """
         Solves for the parameters of the null model using either bounded minimization of the
         negative log-likelihood or bounded least-squares minimization of the equation residuals.

@@ -1,6 +1,6 @@
 [[package]]
 name = "absl-py"
-version = "0.11.0"
+version = "0.12.0"
 description = "Abseil Python Common Libraries, see https://github.com/abseil/abseil-py."
 category = "main"
 optional = false
@@ -135,7 +135,7 @@ colors = ["colorama (>=0.4.3,<0.5.0)"]
 
 [[package]]
 name = "jax"
-version = "0.1.77"
+version = "0.2.10"
 description = "Differentiate, compile, and transform Numpy code."
 category = "main"
 optional = false
@@ -148,7 +148,7 @@ opt_einsum = "*"
 
 [[package]]
 name = "jaxlib"
-version = "0.1.61"
+version = "0.1.64"
 description = "XLA library for JAX"
 category = "main"
 optional = false
@@ -503,12 +503,12 @@ testing = ["pytest (>=3.5,!=3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "57acabdb6ed09a3932c93bb4ae119e1de4940f8dd2cd12cd7b4ba48fe79ca59e"
+content-hash = "e88f783b3fd0444e1d76c95be6d066f382639f2e84a1b353f2471f71ddc64e97"
 
 [metadata.files]
 absl-py = [
-    {file = "absl-py-0.11.0.tar.gz", hash = "sha256:673cccb88d810e5627d0c1c818158485d106f65a583880e2f730c997399bcfa7"},
-    {file = "absl_py-0.11.0-py3-none-any.whl", hash = "sha256:b3d9eb5119ff6e0a0125f6dabf2f9fae02f8acae7be70576002fac27235611c5"},
+    {file = "absl-py-0.12.0.tar.gz", hash = "sha256:b44f68984a5ceb2607d135a615999b93924c771238a63920d17d3387b0d229d5"},
+    {file = "absl_py-0.12.0-py3-none-any.whl", hash = "sha256:afe94e3c751ff81aad55d33ab6e630390da32780110b5af72ae81ecff8418d9e"},
 ]
 appdirs = [
     {file = "appdirs-1.4.4-py2.py3-none-any.whl", hash = "sha256:a841dacd6b99318a741b166adb07e19ee71a274450e68237b4650ca1055ab128"},
@@ -555,17 +555,17 @@ isort = [
     {file = "isort-5.7.0.tar.gz", hash = "sha256:c729845434366216d320e936b8ad6f9d681aab72dc7cbc2d51bedc3582f3ad1e"},
 ]
 jax = [
-    {file = "jax-0.1.77.tar.gz", hash = "sha256:63188ea819f3579b054952fbaa2b71e76823f1b60bccea64c95b5609edbdff83"},
+    {file = "jax-0.2.10.tar.gz", hash = "sha256:c863680596aa369b3f8a4b5f668e3fd66cb541c4130e2a1511a37cc2552d360b"},
 ]
 jaxlib = [
-    {file = "jaxlib-0.1.61-cp36-none-macosx_10_9_x86_64.whl", hash = "sha256:d88866813d6438cbb2f545b6983091525bdbe8633dbbc3ea7842b2e5d561ec6b"},
-    {file = "jaxlib-0.1.61-cp36-none-manylinux2010_x86_64.whl", hash = "sha256:0ef0449dad105144fde97aaae33585b7186c6fb80390e77771a745cc9a937357"},
-    {file = "jaxlib-0.1.61-cp37-none-macosx_10_9_x86_64.whl", hash = "sha256:abbd90228b48add038969f116ea85dd10a9efd8db185bb1a1a6339e48e0c2a41"},
-    {file = "jaxlib-0.1.61-cp37-none-manylinux2010_x86_64.whl", hash = "sha256:cff3a541567b5723314687f71dbcfd349faf78d362b0a6e96a5f2c354015b59c"},
-    {file = "jaxlib-0.1.61-cp38-none-macosx_10_9_x86_64.whl", hash = "sha256:3f53fb31297cf07d43ebf0a434313861f90e6ac685b98996bc1b77b48c48e097"},
-    {file = "jaxlib-0.1.61-cp38-none-manylinux2010_x86_64.whl", hash = "sha256:e0b81fcf77579702b2068bafe379ba04d153bd19239ffc2fd2cbe8308ffe3953"},
-    {file = "jaxlib-0.1.61-cp39-none-macosx_10_9_x86_64.whl", hash = "sha256:72d08423116bfa4fdd58f0264e73feb4263643b0407a0fc619246d2c9f9b1366"},
-    {file = "jaxlib-0.1.61-cp39-none-manylinux2010_x86_64.whl", hash = "sha256:713f2799158128f7af45d8cfb627bd585f142da9314485f345ccd80bd2eaf8c5"},
+    {file = "jaxlib-0.1.64-cp36-none-macosx_10_9_x86_64.whl", hash = "sha256:b2a7cd42032c3eefd6b03bbfb026f7f76ac290c520bc6d7e040ae83f0f84e4f6"},
+    {file = "jaxlib-0.1.64-cp36-none-manylinux2010_x86_64.whl", hash = "sha256:4f60212d926d721b44898599dba88290f21a2bfb5512d14df4a7a81bf0ec06c9"},
+    {file = "jaxlib-0.1.64-cp37-none-macosx_10_9_x86_64.whl", hash = "sha256:72099ac6940728b9e9f76cc81bb547454d8bcbeba1a082a2abb6f0dc201ead70"},
+    {file = "jaxlib-0.1.64-cp37-none-manylinux2010_x86_64.whl", hash = "sha256:362f05b82934669f817eb2dff0b5a807ab513dc0b2387cb58280664839118b81"},
+    {file = "jaxlib-0.1.64-cp38-none-macosx_10_9_x86_64.whl", hash = "sha256:824a784a770e0a2d1f71322f52a560b4da8dad8009950df1438e3b6f070eb343"},
+    {file = "jaxlib-0.1.64-cp38-none-manylinux2010_x86_64.whl", hash = "sha256:6993ac9b0a985f473b75e142651dafad7186a98dd39e5ad3663addb74c6b9317"},
+    {file = "jaxlib-0.1.64-cp39-none-macosx_10_9_x86_64.whl", hash = "sha256:d960b06d1865073228a1e9c11968be4bcd5e383b6d25c02aea014507b2426a73"},
+    {file = "jaxlib-0.1.64-cp39-none-manylinux2010_x86_64.whl", hash = "sha256:d7674c89980230299caafbccaf8b29c122a4d2f9240eee39d2f4a3e3fadc1e83"},
 ]
 lazy-object-proxy = [
     {file = "lazy-object-proxy-1.5.2.tar.gz", hash = "sha256:5944a9b95e97de1980c65f03b79b356f30a43de48682b8bdd90aa5089f0ec1f4"},
