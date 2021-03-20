@@ -15,13 +15,6 @@ import math
 
 EPS = np.finfo(float).eps
 
-def count_combinations(n,r):
-    """
-    math.comb in Python 3.8+, but for convenience with Colab, etc...
-    """
-    f = math.factorial
-    return f(n) / f(r) / f(n-r)
-
 def print_percentiles(v):
     """
     Prints the min, 25th percentile, median, 75th percentile, and max.

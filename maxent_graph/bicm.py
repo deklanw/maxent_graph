@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.optimize
+import scipy.special
 import pandas as pd
 import math
 import itertools
@@ -11,7 +12,7 @@ from tqdm import tqdm
 import jax.numpy as jnp
 
 from .MaxentGraph import MaxentGraph
-from .util import EPS, jax_class_jit, R_to_zero_to_inf, count_combinations
+from .util import EPS, jax_class_jit, R_to_zero_to_inf
 from . import poibin
 
 
@@ -253,7 +254,7 @@ class BICM(MaxentGraph):
         nonzero_set = set(zip(*observed_lambda_motif_counts.nonzero()))
 
         print(f"Nonzero lambda-motif counts to check pval of {len(nonzero_set)}")
-        print(f"Total possible pairs: {count_combinations(B.shape[0], 2)}")
+        print(f"Total possible pairs: {scipy.special.comb(B.shape[0], 2)}")
 
         z = self.transform(solution)
 
@@ -264,7 +265,7 @@ class BICM(MaxentGraph):
 
         edgelist = []
         print(
-            f"Total unique row degree pairs to check {count_combinations(self.n_row_degrees, 2)}"
+            f"Total unique row degree pairs to check {scipy.special.comb(self.n_row_degrees, 2)}"
         )
         for (i, j) in tqdm(itertools.combinations(range(self.n_row_degrees), 2)):
             degree_i = self.row_degrees[i]
