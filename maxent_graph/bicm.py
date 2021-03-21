@@ -258,8 +258,9 @@ class BICM(MaxentGraph):
 
         z = self.transform(solution)
 
-        x = z[: self.n_row_degrees]
-        y = z[self.n_row_degrees :]
+        # numba doesn't like xlaarrays
+        x = np.array(z[: self.n_row_degrees])
+        y = np.array(z[self.n_row_degrees :])
 
         print(f"Unique degrees {(self.n_row_degrees, self.n_col_degrees)}")
 
