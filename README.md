@@ -19,7 +19,7 @@ Todo:
 - Multiple comparison correction
 - Suppress or work around some warnings
 
-My implementation of the BiCM was inspired by https://github.com/mat701/BiCM_beta and https://github.com/tsakim/bicm. One of these might meet your needs better.
+My implementation of the BiCM was inspired by https://github.com/mat701/BiCM and https://github.com/tsakim/bicm. One of these might meet your needs better.
 
 [1] Saracco, Fabio, Mika J Straka, Riccardo Di Clemente, Andrea Gabrielli, Guido Caldarelli, and Tiziano Squartini. “Inferring Monopartite Projections of Bipartite Networks: An Entropy-Based Approach.” New Journal of Physics 19, no. 5 (May 17, 2017): 053022. https://doi.org/10.1088/1367-2630/aa6b38.
 
