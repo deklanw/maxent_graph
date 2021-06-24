@@ -5,7 +5,7 @@ import scipy.sparse
 import jax.numpy as jnp
 
 from .MaxentGraph import MaxentGraph
-from .util import EPS, jax_class_jit
+from .util import EPS, R_to_zero_to_inf, R_to_zero_to_one, jax_class_jit
 
 
 class ECM(MaxentGraph):
@@ -13,7 +13,7 @@ class ECM(MaxentGraph):
     (Undirected) Enhanced configuration model.
     """
 
-    def __init__(self, W):
+    def __init__(self, W, x_transform=0, y_transform=0):
         # validate?
 
         # ignore self-loops
@@ -23,6 +23,9 @@ class ECM(MaxentGraph):
         self.s = W.sum(axis=1).getA1()
 
         self.num_nodes = len(self.k)
+
+        self.x_transform, self.x_inv_transform = R_to_zero_to_inf[x_transform]
+        self.y_transform, self.y_inv_transform = R_to_zero_to_one[y_transform]
 
     def bounds(self):
         lower_bounds = np.array([EPS] * 2 * self.num_nodes)
@@ -34,6 +37,20 @@ class ECM(MaxentGraph):
 
     def order_node_sequence(self):
         return np.concatenate([self.k, self.s])
+
+    @jax_class_jit
+    def transform_parameters(self, v):
+        x = v[: self.num_nodes]
+        y = v[self.num_nodes :]
+
+        return jnp.concatenate((self.x_transform(x), self.y_transform(y)))
+
+    @jax_class_jit
+    def transform_parameters_inv(self, v):
+        x = v[: self.num_nodes]
+        y = v[self.num_nodes :]
+
+        return jnp.concatenate((self.x_inv_transform(x), self.y_inv_transform(y)))
 
     def get_initial_guess(self, option=5):
         """
@@ -52,27 +69,28 @@ class ECM(MaxentGraph):
         elif option == 3:
             initial_guess = np.repeat(0.10, 2 * num_nodes)
         elif option == 4:
-            initial_guess = self.clip(np.concatenate([ks / ks.max(), ss / ss.max()]))
+            initial_guess = np.concatenate([ks / ks.max(), ss / ss.max()])
         elif option == 5:
-            initial_guess = self.clip(
-                np.concatenate([ks / np.sqrt(num_edges), np.random.sample(num_nodes)])
+            initial_guess = np.concatenate(
+                [ks / np.sqrt(num_edges), np.random.sample(num_nodes)]
             )
         elif option == 6:
             xs_guess = ks / np.sqrt(num_edges)
             s_per_k = ss / (ks + 1)
             ys_guess = s_per_k / s_per_k.max()
-            initial_guess = self.clip(np.concatenate([xs_guess, ys_guess]))
+            initial_guess = np.concatenate([xs_guess, ys_guess])
         else:
             raise ValueError("Invalid option value. Choose from 1-6.")
 
-        return initial_guess
+        return self.transform_parameters_inv(self.clip(initial_guess))
 
     @jax_class_jit
     def expected_node_sequence(self, v):
+        z = self.transform_parameters(v)
         N = self.num_nodes
 
-        x = v[:N]
-        y = v[N:]
+        x = z[:N]
+        y = z[N:]
 
         xx = jnp.outer(x, x)
         yy = jnp.outer(y, y)
@@ -87,64 +105,12 @@ class ECM(MaxentGraph):
 
         return jnp.concatenate((avg_k, avg_s))
 
-    @jax_class_jit
-    def expected_node_sequence_jac(self, v):
-        """
-        Using this little trick to multiply a vector with a matrix column-wise:
-        A * b[:, None]
-
-        https://stackoverflow.com/a/45895371/4749956
-
-        """
-        N = self.num_nodes
-
-        x = v[:N]
-        y = v[N:]
-
-        xx = jnp.outer(x, x)
-        yy = jnp.outer(y, y)
-
-        inv_denom = jnp.power(1 / (yy * (xx - 1) + 1), 2)
-
-        m1 = x[:, None] * yy * (1 - yy) * inv_denom
-        m1 -= jnp.diag(jnp.diag(m1))
-        m2 = x * yy * (1 - yy) * inv_denom
-        m2 -= jnp.diag(jnp.diag(m2))
-        d_k_x = m1 + jnp.diag(jnp.sum(m2, axis=1))
-
-        m3 = xx * y[:, None] * inv_denom
-        m3 -= jnp.diag(jnp.diag(m3))
-        m4 = xx * y * inv_denom
-        m4 -= jnp.diag(jnp.diag(m4))
-        d_k_y = m3 + jnp.diag(jnp.sum(m4, axis=1))
-
-        first_row_block = jnp.concatenate((d_k_x, d_k_y), axis=1)
-
-        m5 = yy * x[:, None] * inv_denom
-        m5 -= jnp.diag(jnp.diag(m5))
-        m6 = yy * x * inv_denom
-        m6 -= jnp.diag(jnp.diag(m6))
-        d_s_x = m5 + jnp.diag(jnp.sum(m6, axis=1))
-
-        inv_denom2 = jnp.power(1 / (yy - 1), 2) * inv_denom
-
-        m7 = (
-            xx * (y[:, None] * y[:, None] * yy * y * (xx - 1) + y[:, None]) * inv_denom2
-        )
-        m7 -= jnp.diag(jnp.diag(m7))
-        m8 = xx * (y[:, None] * yy * y * y * (xx - 1) + y) * inv_denom2
-        m8 -= jnp.diag(jnp.diag(m8))
-        d_s_y = m7 + jnp.diag(jnp.sum(m8, axis=1))
-
-        second_row_block = jnp.concatenate((d_s_x, d_s_y), axis=1)
-
-        return jnp.concatenate((first_row_block, second_row_block), axis=0)
-
     def expected_node_sequence_loops(self, v):
+        z = self.transform_parameters(v)
         N = self.num_nodes
 
-        x = v[:N]
-        y = v[N:]
+        x = z[:N]
+        y = z[N:]
 
         avg_k = np.zeros(N)
         avg_s = np.zeros(N)
@@ -165,12 +131,13 @@ class ECM(MaxentGraph):
         return np.concatenate([avg_k, avg_s])
 
     def neg_log_likelihood_loops(self, v):
-        llhood = 0
-
+        z = self.transform_parameters(v)
         N = self.num_nodes
 
-        x = v[:N]
-        y = v[N:]
+        x = z[:N]
+        y = z[N:]
+
+        llhood = 0
 
         for i in range(N):
             llhood += self.k[i] * np.log(x[i])
@@ -187,12 +154,13 @@ class ECM(MaxentGraph):
 
     @jax_class_jit
     def neg_log_likelihood(self, v):
-        llhood = 0
-
+        z = self.transform_parameters(v)
         N = self.num_nodes
 
-        x = v[:N]
-        y = v[N:]
+        x = z[:N]
+        y = z[N:]
+
+        llhood = 0
 
         llhood += jnp.sum(self.k * jnp.log(x))
         llhood += jnp.sum(self.s * jnp.log(y))
@@ -206,42 +174,12 @@ class ECM(MaxentGraph):
 
         return -llhood
 
-    @jax_class_jit
-    def neg_log_likelihood_grad(self, v):
-        """
-
-        TODO: Check if I can make this more efficient. It already scales better than AD.
-        """
-        N = self.num_nodes
-
-        x = v[:N]
-        y = v[N:]
-
-        xx = jnp.outer(x, x)
-        yy = jnp.outer(y, y)
-
-        denom = 1 - yy + xx * yy
-
-        m1 = (x * yy) / denom
-        d_x = self.k / x - jnp.sum(m1, axis=1) + jnp.diag(m1)
-
-        m2 = -y * (1 / (1 - yy))
-        m3 = (-y + xx * y) / denom
-        d_y = (
-            self.s / y
-            + jnp.sum(m2, axis=1)
-            - jnp.diag(m2)
-            - jnp.sum(m3, axis=1)
-            + jnp.diag(m3)
-        )
-
-        return -jnp.concatenate((d_x, d_y))
-
     def get_pval_matrix(self, v, W):
+        z = self.transform_parameters(v)
         N = self.num_nodes
 
-        x = v[:N]
-        y = v[N:]
+        x = z[:N]
+        y = z[N:]
 
         # only need one triangle since symmetric
         # convert to lil for fast index assignment
@@ -259,4 +197,3 @@ class ECM(MaxentGraph):
             W_new[i, j] = p_val
 
         return W_new
-

@@ -7,7 +7,7 @@ import jax.numpy as jnp
 import pandas as pd
 
 from .MaxentGraph import MaxentGraph
-from .util import EPS, jax_class_jit
+from .util import EPS, jax_class_jit, R_to_zero_to_one
 
 
 class BWCM(MaxentGraph):
@@ -16,7 +16,7 @@ class BWCM(MaxentGraph):
 
     """
 
-    def __init__(self, B):
+    def __init__(self, B, transform=0):
         self.B = B
         num_rows, num_cols = B.shape
 
@@ -63,9 +63,11 @@ class BWCM(MaxentGraph):
         self.n_col_strengths = len(self.col_strengths)
         self.total_unique = self.n_row_strengths + self.n_col_strengths
 
+        self.transform, self.inv_transform = R_to_zero_to_one[transform]
+
     def bounds(self):
-        lower_bounds = np.array([1e-5] * self.total_unique)
-        upper_bounds = np.array([1 - 1e-5] * self.total_unique)
+        lower_bounds = np.array([EPS] * self.total_unique)
+        upper_bounds = np.array([1 - EPS] * self.total_unique)
         return (
             (lower_bounds, upper_bounds),
             scipy.optimize.Bounds(lower_bounds, upper_bounds),
@@ -73,6 +75,14 @@ class BWCM(MaxentGraph):
 
     def order_node_sequence(self):
         return np.concatenate([self.row_strengths, self.col_strengths])
+
+    @jax_class_jit
+    def transform_parameters(self, v):
+        return self.transform(v)
+
+    @jax_class_jit
+    def transform_parameters_inv(self, v):
+        return self.inv_transform(v)
 
     def get_initial_guess(self, option=1):
         if option == 1:
@@ -91,12 +101,13 @@ class BWCM(MaxentGraph):
 
         x0 = np.concatenate([x0_rows, x0_cols])
 
-        return self.clip(x0)
+        return self.transform_parameters_inv(self.clip(x0))
 
     @jax_class_jit
     def expected_node_sequence(self, v):
-        x = v[: self.n_row_strengths]
-        y = v[self.n_row_strengths :]
+        z = self.transform_parameters(v)
+        x = z[: self.n_row_strengths]
+        y = z[self.n_row_strengths :]
 
         xy = jnp.outer(x, y)
         p = xy / (1 - xy)
@@ -110,32 +121,10 @@ class BWCM(MaxentGraph):
 
         return jnp.concatenate((row_expected, col_expected))
 
-    @jax_class_jit
-    def expected_node_sequence_jac(self, v):
-        x = v[: self.n_row_strengths]
-        y = v[self.n_row_strengths :]
-
-        xy = jnp.outer(x, y)
-        t = jnp.power(1 / (1 - xy), 2)
-
-        d_x = (t * y * self.col_multiplicity).sum(axis=1)
-        d_x = jnp.diag(d_x)
-
-        d_y = jnp.outer(self.col_multiplicity, x).T * t
-        u_x = (jnp.outer(self.row_multiplicity, y) * t).T
-
-        u_y = (t.T * x * self.row_multiplicity).sum(axis=1)
-        u_y = jnp.diag(u_y)
-
-        d = jnp.concatenate([d_x, d_y], axis=1)
-        u = jnp.concatenate([u_x, u_y], axis=1)
-        j = jnp.concatenate([d, u], axis=0)
-
-        return j
-
     def expected_node_sequence_loops(self, v):
-        x = v[: self.n_row_strengths]
-        y = v[self.n_row_strengths :]
+        z = self.transform_parameters(v)
+        x = z[: self.n_row_strengths]
+        y = z[self.n_row_strengths :]
 
         row_expected = np.zeros(self.n_row_strengths)
         col_expected = np.zeros(self.n_col_strengths)
@@ -149,9 +138,28 @@ class BWCM(MaxentGraph):
 
         return np.concatenate((row_expected, col_expected))
 
+    @jax_class_jit
+    def neg_log_likelihood(self, v):
+        z = self.transform_parameters(v)
+        x = z[: self.n_row_strengths]
+        y = z[self.n_row_strengths :]
+
+        llhood = jnp.sum(self.row_strengths * self.row_multiplicity * jnp.log(x))
+        llhood += jnp.sum(self.col_strengths * self.col_multiplicity * jnp.log(y))
+
+        Q = jnp.log(1 - jnp.outer(x, y))
+        Q = Q * self.col_multiplicity
+        Q = Q.T * self.row_multiplicity
+        # don't need to transpose back because we're summing anyways
+        llhood += jnp.sum(Q)
+
+        return -llhood
+
     def neg_log_likelihood_loops(self, v):
-        x = v[: self.n_row_strengths]
-        y = v[self.n_row_strengths :]
+        z = self.transform_parameters(v)
+        x = z[: self.n_row_strengths]
+        y = z[self.n_row_strengths :]
+
         llhood = 0
 
         for i in range(self.n_row_strengths):
@@ -169,38 +177,3 @@ class BWCM(MaxentGraph):
                 )
 
         return -llhood
-
-    @jax_class_jit
-    def neg_log_likelihood(self, v):
-        x = v[: self.n_row_strengths]
-        y = v[self.n_row_strengths :]
-
-        llhood = jnp.sum(self.row_strengths * self.row_multiplicity * jnp.log(x))
-        llhood += jnp.sum(self.col_strengths * self.col_multiplicity * jnp.log(y))
-
-        Q = jnp.log(1 - jnp.outer(x, y))
-        Q = Q * self.col_multiplicity
-        Q = Q.T * self.row_multiplicity
-        # don't need to transpose back because we're summing anyways
-        llhood += jnp.sum(Q)
-
-        return -llhood
-
-    @jax_class_jit
-    def neg_log_likelihood_grad(self, v):
-        x = v[: self.n_row_strengths]
-        y = v[self.n_row_strengths :]
-
-        xy = jnp.outer(x, y)
-
-        denom = jnp.outer(self.row_multiplicity, self.col_multiplicity) / (1 - xy)
-
-        x_1 = self.row_strengths * self.row_multiplicity / x
-        # sum along columns
-        x_2 = (denom * -y).sum(axis=1)
-
-        y_1 = self.col_strengths * self.col_multiplicity / y
-        # sum along rows
-        y_2 = (denom.T * -x).sum(axis=1)
-
-        return -jnp.concatenate((x_1 + x_2, y_1 + y_2))

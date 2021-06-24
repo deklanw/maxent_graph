@@ -5,21 +5,30 @@ import scipy.optimize
 import jax.numpy as jnp
 
 from .MaxentGraph import MaxentGraph
-from .util import EPS, jax_class_jit
+from .util import EPS, jax_class_jit, R_to_zero_to_inf
 
 
 class RCM(MaxentGraph):
-    def __init__(self, A):
+    def __init__(self, A, transform=0):
         A_dense = A.todense()
-        A_t_dense = A.T.todense()
-        unreciprocated = np.multiply(A_dense, 1 - A_t_dense)
+        A_t_dense = A_dense.T
+
+        unreciprocated = np.multiply(A_dense, np.logical_xor(A_dense, A_t_dense))
         reciprocated = np.multiply(A_dense, A_t_dense)
 
         self.k_unr_out = unreciprocated.sum(axis=1).getA1()
         self.k_unr_in = unreciprocated.sum(axis=0).getA1()
         self.k_recip = reciprocated.sum(axis=1).getA1()
 
+        # sanity checking
+        k_out = A_dense.sum(axis=1).getA1()
+        k_in = A_dense.sum(axis=0).getA1()
+
+        assert np.allclose(self.k_unr_out + self.k_recip, k_out)
+        assert np.allclose(self.k_unr_in + self.k_recip, k_in)
+
         self.num_nodes = len(self.k_unr_out)
+        self.transform, self.inv_transform = R_to_zero_to_inf[transform]
 
     def bounds(self):
         lower_bounds = np.array([EPS] * 3 * self.num_nodes)
@@ -33,25 +42,36 @@ class RCM(MaxentGraph):
     def order_node_sequence(self):
         return np.concatenate([self.k_unr_out, self.k_unr_in, self.k_recip])
 
-    def get_initial_guess(self, option=1):
+    @jax_class_jit
+    def transform_parameters(self, v):
+        return self.transform(v)
+
+    @jax_class_jit
+    def transform_parameters_inv(self, v):
+        return self.inv_transform(v)
+
+    def get_initial_guess(self, option=4):
         if option == 1:
-            return np.random.sample(3 * self.num_nodes)
+            g = np.random.sample(3 * self.num_nodes)
         elif option == 2:
-            return np.repeat(0.10, 3 * self.num_nodes)
+            g = np.repeat(0.10, 3 * self.num_nodes)
         elif option == 3:
-            return np.repeat(0.01, 3 * self.num_nodes)
+            g = np.repeat(0.01, 3 * self.num_nodes)
         elif option == 4:
-            return self.clip(self.order_node_sequence())
+            g = self.order_node_sequence()
         else:
-            assert False
+            raise ValueError("Invalid option value. Choose from 1-4.")
+
+        return self.transform_parameters_inv(self.clip(g))
 
     @jax_class_jit
     def expected_node_sequence(self, v):
+        t = self.transform_parameters(v)
         N = self.num_nodes
 
-        x = v[:N]
-        y = v[N : 2 * N]
-        z = v[2 * N :]
+        x = t[:N]
+        y = t[N : 2 * N]
+        z = t[2 * N :]
 
         xy = jnp.outer(x, y)
         zz = jnp.outer(z, z)
@@ -67,17 +87,13 @@ class RCM(MaxentGraph):
 
         return jnp.concatenate((avg_k_unr_out, avg_k_unr_in, avg_k_recip))
 
-    @jax_class_jit
-    def expected_node_sequence_jac(self, v):
-        # todo
-        assert False
-
     def expected_node_sequence_loops(self, v):
+        t = self.transform_parameters(v)
         N = self.num_nodes
 
-        x = v[:N]
-        y = v[N : 2 * N]
-        z = v[2 * N :]
+        x = t[:N]
+        y = t[N : 2 * N]
+        z = t[2 * N :]
 
         k_unr_out_r = np.zeros(N)
         k_unr_in_r = np.zeros(N)
@@ -97,11 +113,12 @@ class RCM(MaxentGraph):
         return np.concatenate((k_unr_out_r, k_unr_in_r, k_recip_r))
 
     def neg_log_likelihood_loops(self, v):
+        t = self.transform_parameters(v)
         N = self.num_nodes
 
-        x = v[:N]
-        y = v[N : 2 * N]
-        z = v[2 * N :]
+        x = t[:N]
+        y = t[N : 2 * N]
+        z = t[2 * N :]
 
         llhood = 0
 
@@ -111,18 +128,19 @@ class RCM(MaxentGraph):
             llhood += self.k_recip[i] * np.log(z[i])
 
         for i in range(N):
-            for j in range(i + 1, N):
+            for j in range(i):
                 llhood -= np.log(1 + x[i] * y[j] + x[j] * y[i] + z[i] * z[j])
 
         return -llhood
 
     @jax_class_jit
     def neg_log_likelihood(self, v):
+        t = self.transform_parameters(v)
         N = self.num_nodes
 
-        x = v[:N]
-        y = v[N : 2 * N]
-        z = v[2 * N :]
+        x = t[:N]
+        y = t[N : 2 * N]
+        z = t[2 * N :]
 
         llhood = 0
 
@@ -135,11 +153,6 @@ class RCM(MaxentGraph):
 
         Q = jnp.log(1 + xy + xy.T + zz)
 
-        llhood -= jnp.sum(jnp.tril(Q))
+        llhood -= jnp.sum(jnp.tril(Q, -1))
 
         return -llhood
-
-    @jax_class_jit
-    def neg_log_likelihood_grad(self, v):
-        # todo
-        assert False

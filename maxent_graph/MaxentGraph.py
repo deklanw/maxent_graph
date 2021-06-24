@@ -38,6 +38,18 @@ class MaxentGraph(ABC):
         return np.clip(v, lower, upper)
 
     @abstractmethod
+    def transform_parameters(self, v):
+        """
+        Transforms parameters to bounded form.
+        """
+
+    @abstractmethod
+    def transform_parameters_inv(self, v):
+        """
+        Transforms parameters to all real numbers for optimization convenience.
+        """
+
+    @abstractmethod
     def order_node_sequence(self):
         """
         Concatenates node constraint sequence in a canonical order.
@@ -79,6 +91,7 @@ class MaxentGraph(ABC):
         """
         Computes the negative log-likelihood using matrix operations.
         """
+
     def compute_relative_error(self, expected):
         """
         Computes relative error for solution for every element of the sequence.
@@ -101,12 +114,14 @@ class MaxentGraph(ABC):
         if method in ["trust-exact", "dogleg"]:
             hess = jit(jacfwd(jacrev(self.neg_log_likelihood)))
             args["hess"] = hess
+        elif method in ["Newton-CG", "trust-ncg", "trust-krylov", "trust-constr"]:
+            hessp = jit(hvp(self.neg_log_likelihood))
+            args["hessp"] = hessp
 
         if method in ["trf", "dogbox", "lm"]:
             f = self.node_sequence_residuals
             jac = jit(jacrev(self.expected_node_sequence))
             args["jac"] = jac
-
             solver = scipy.optimize.least_squares
         elif method in [
             "Nelder-Mead",
@@ -132,13 +147,24 @@ class MaxentGraph(ABC):
             if method in ["L-BFGS-B"]:
                 jac = wrap_with_array(jac)
 
-            hessp = jit(hvp(self.neg_log_likelihood))
-            args["hessp"] = hessp
-            args["jac"] = jac
+            if method in [
+                "CG",
+                "BFGS",
+                "Newton-CG",
+                "L-BFGS-B",
+                "TNC",
+                "SLSQP",
+                "dogleg",
+                "trust-ncg",
+                "trust-krylov",
+                "trust-exact",
+                "trust-constr",
+            ]:
+                args["jac"] = jac
 
             solver = scipy.optimize.minimize
         else:
-            assert False
+            raise ValueError("Invalid optimization method")
 
         start = time.time()
         sol = solver(f, x0=x0, method=method, **args)

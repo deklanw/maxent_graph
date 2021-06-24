@@ -88,53 +88,45 @@ class BIECM(MaxentGraph):
         elif option == 3:
             initial_guess = np.random.sample(2 * self.num_nodes)
         elif option == 4:
-            initial_guess = self.clip(
-                np.concatenate(
-                    [
-                        self.row_degrees / math.sqrt(num_edges),
-                        self.col_degrees / math.sqrt(num_edges),
-                        np.random.sample(self.num_nodes),
-                    ]
-                )
+            initial_guess = np.concatenate(
+                [
+                    self.row_degrees / math.sqrt(num_edges),
+                    self.col_degrees / math.sqrt(num_edges),
+                    np.random.sample(self.num_nodes),
+                ]
             )
         elif option == 5:
             row_strength_per_degree = self.row_strengths / (1 + self.row_degrees)
             col_strength_per_degree = self.col_strengths / (1 + self.col_degrees)
 
-            initial_guess = self.clip(
-                np.concatenate(
-                    [
-                        self.row_degrees / math.sqrt(num_edges),
-                        self.col_degrees / math.sqrt(num_edges),
-                        row_strength_per_degree / (row_strength_per_degree.max() + 1),
-                        col_strength_per_degree / (col_strength_per_degree.max() + 1),
-                    ]
-                )
+            initial_guess = np.concatenate(
+                [
+                    self.row_degrees / math.sqrt(num_edges),
+                    self.col_degrees / math.sqrt(num_edges),
+                    row_strength_per_degree / (row_strength_per_degree.max() + 1),
+                    col_strength_per_degree / (col_strength_per_degree.max() + 1),
+                ]
             )
         elif option == 6:
-            initial_guess = self.clip(
-                np.concatenate(
-                    [
-                        self.row_degrees / math.sqrt(num_edges),
-                        self.col_degrees / math.sqrt(num_edges),
-                        np.repeat(0.10, self.num_nodes),
-                    ]
-                )
+            initial_guess = np.concatenate(
+                [
+                    self.row_degrees / math.sqrt(num_edges),
+                    self.col_degrees / math.sqrt(num_edges),
+                    np.repeat(0.10, self.num_nodes),
+                ]
             )
         elif option == 7:
-            initial_guess = self.clip(
-                np.concatenate(
-                    [
-                        self.row_degrees / math.sqrt(num_edges),
-                        self.col_degrees / math.sqrt(num_edges),
-                        np.repeat(0.01, self.num_nodes),
-                    ]
-                )
+            initial_guess = np.concatenate(
+                [
+                    self.row_degrees / math.sqrt(num_edges),
+                    self.col_degrees / math.sqrt(num_edges),
+                    np.repeat(0.01, self.num_nodes),
+                ]
             )
         else:
             raise ValueError("Invalid option value. Choose from 1-7.")
 
-        return self.transform_parameters_inv(initial_guess)
+        return self.transform_parameters_inv(self.clip(initial_guess))
 
     @jax_class_jit
     def expected_node_sequence(self, v):

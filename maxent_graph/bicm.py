@@ -71,7 +71,6 @@ class BICM(MaxentGraph):
     def order_node_sequence(self):
         return np.concatenate([self.row_degrees, self.col_degrees])
 
-
     @jax_class_jit
     def transform_parameters(self, v):
         return self.transform(v)
@@ -178,9 +177,9 @@ class BICM(MaxentGraph):
         return -llhood
 
     def get_fitness_model_solution(self):
-        '''
+        """
         Just a good initial guess based on the 'fitness' assumption
-        '''
+        """
         start = time.time()
         solution = scipy.optimize.root_scalar(
             self.fitness_zero,

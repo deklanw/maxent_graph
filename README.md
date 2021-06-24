@@ -5,6 +5,7 @@ Supports:
 - Directed Enhanced Configuration Model (DECM) [2]
 - Bipartite Weighted Configuration Model (BWCM) [3]
 - Bipartite Enhanced Configuration Model (BiECM) [3]
+- Reciprocal Configuration Model (RCM) [5]
 
 See the `examples` folder for Jupyter notebook examples of usage. There is an example of using BiCM to form a projection of a bipartite network of Senators and bills. And, there is an example of using ECM to filter edges from a graph of relations between Game of Thrones characters.
 
@@ -17,7 +18,6 @@ Todo:
 - Make poibin selection more flexible
 - Multiple comparison correction
 - Suppress or work around some warnings
-- Finish Reciprocal Configuration Model (RCM), (the by-hand gradient and Jacobian) [5]
 
 My implementation of the BiCM was inspired by https://github.com/mat701/BiCM_beta and https://github.com/tsakim/bicm. One of these might meet your needs better.
 
