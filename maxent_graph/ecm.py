@@ -19,8 +19,8 @@ class ECM(MaxentGraph):
         # ignore self-loops
         W -= scipy.sparse.diags(W.diagonal())
 
-        self.k = (W > 0).sum(axis=1).getA1().astype("float64")
-        self.s = W.sum(axis=1).getA1()
+        self.k = (W > 0).sum(axis=1).astype(np.float64)
+        self.s = W.sum(axis=1).astype(np.float64)
 
         self.num_nodes = len(self.k)
 

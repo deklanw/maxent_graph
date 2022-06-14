@@ -20,15 +20,10 @@ class DECM(MaxentGraph):
         Ensure you're following this convention. graph-tool, for instance, has this reversed.
         Just transpose before passing if that's the case.
         """
-        # validate?
-
-        # ignore self-loops
-        W -= scipy.sparse.diags(W.diagonal())
-
-        self.k_out = (W > 0).sum(axis=1).getA1().astype("float64")
-        self.k_in = (W > 0).sum(axis=0).getA1().astype("float64")
-        self.s_out = W.sum(axis=1).getA1()
-        self.s_in = W.sum(axis=0).getA1()
+        self.k_out = (W > 0).sum(axis=1).astype(np.float64)
+        self.k_in = (W > 0).sum(axis=0).astype(np.float64)
+        self.s_out = W.sum(axis=1).astype(np.float64)
+        self.s_in = W.sum(axis=0).astype(np.float64)
 
         self.num_nodes = len(self.k_out)
 
@@ -50,15 +45,15 @@ class DECM(MaxentGraph):
 
     @jax_class_jit
     def transform_parameters(self, v):
-        x = v[: 2*self.num_nodes]
-        y = v[2*self.num_nodes :]
+        x = v[: 2 * self.num_nodes]
+        y = v[2 * self.num_nodes :]
 
         return jnp.concatenate((self.x_transform(x), self.y_transform(y)))
 
     @jax_class_jit
     def transform_parameters_inv(self, v):
-        x = v[: 2*self.num_nodes]
-        y = v[2*self.num_nodes :]
+        x = v[: 2 * self.num_nodes]
+        y = v[2 * self.num_nodes :]
 
         return jnp.concatenate((self.x_inv_transform(x), self.y_inv_transform(y)))
 
@@ -82,8 +77,8 @@ class DECM(MaxentGraph):
             initial_guess = np.concatenate([ks / ks.max(), ss / ss.max()])
         elif option == 5:
             initial_guess = np.concatenate(
-                    [ks / np.sqrt(num_edges), np.random.sample(2 * num_nodes)]
-                )
+                [ks / np.sqrt(num_edges), np.random.sample(2 * num_nodes)]
+            )
         elif option == 6:
             xs_guess = ks / np.sqrt(num_edges)
             s_per_k = ss / (ks + 1)
@@ -108,7 +103,7 @@ class DECM(MaxentGraph):
         yy = jnp.outer(y_out, y_in)
 
         pij = xx * yy / (1 - yy + xx * yy)
-        pij = pij - jnp.diag(jnp.diag(pij))
+
         avg_k_out = pij.sum(axis=1)
         avg_k_in = pij.sum(axis=0)
 
@@ -136,8 +131,6 @@ class DECM(MaxentGraph):
 
         for i in range(N):
             for j in range(N):
-                if i == j:
-                    continue
 
                 xx_out = x_out[i] * x_in[j]
                 yy_out = y_out[i] * y_in[j]
@@ -178,8 +171,6 @@ class DECM(MaxentGraph):
 
         for i in range(N):
             for j in range(N):
-                if i == j:
-                    continue
                 xx = x_out[i] * x_in[j]
                 yy = y_out[i] * y_in[j]
                 t = (1 - yy) / (1 - yy + xx * yy)
@@ -209,12 +200,11 @@ class DECM(MaxentGraph):
         yy = jnp.outer(y_out, y_in)
 
         t = (1 - yy) / (1 - yy + xx * yy)
-        log_t = jnp.log(t)
-        llhood += jnp.sum(log_t) - jnp.trace(log_t)
+        llhood += jnp.sum(jnp.log(t))
 
         return -llhood
 
-    def get_pval_matrix(self, v, W):
+    def get_surprise_matrix(self, v, W):
         z = self.transform_parameters(v)
         N = self.num_nodes
 
@@ -225,6 +215,7 @@ class DECM(MaxentGraph):
 
         W_new = W.copy().tolil()
 
+        # p=1 for w=0. so, the surprise is 0 for those cases. just ignore.
         for i, j in zip(*W.nonzero()):
             w = W[i, j]
             xx_out = x_out[i] * x_in[j]
@@ -233,6 +224,6 @@ class DECM(MaxentGraph):
 
             # probability this weight would be at least this large, given null model
             p_val = pij * np.power(y_out[i] * y_in[j], w - 1)
-            W_new[i, j] = p_val
+            W_new[i, j] = -np.log(p_val)
 
         return W_new

@@ -56,7 +56,7 @@ def zero_diagonal(x):
 
 def nx_get_A(fn, weight_key=None):
     g = nx.read_graphml(fn)
-    return nx.adjacency_matrix(g, nodelist=None, weight=weight_key)
+    return nx.to_scipy_sparse_array(g, nodelist=None, weight=weight_key)
 
 
 def nx_get_B(fn, weight_key=None, bipartite_key=None):

@@ -20,10 +20,8 @@ class BWCM(MaxentGraph):
         self.B = B
         num_rows, num_cols = B.shape
 
-        # since B is a (sparse) matrix, the sums will be matrices
-        # the sums above will give ints, so we need to convert to floats
-        row_sums = np.asarray(np.sum(B, axis=1).astype(np.float64)).flatten()
-        col_sums = np.asarray(np.sum(B, axis=0).astype(np.float64)).flatten()
+        row_sums = B.sum(axis=1).getA1().astype(np.float64)
+        col_sums = B.sum(axis=0).getA1().astype(np.float64)
 
         if np.any(np.where(row_sums == 0)) or np.any(np.where(col_sums == 0)):
             warnings.warn("Some nodes have 0 degree. Check on that")

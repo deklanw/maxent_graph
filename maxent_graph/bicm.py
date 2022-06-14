@@ -23,10 +23,8 @@ class BICM(MaxentGraph):
 
         self.num_edges = B.count_nonzero()
 
-        # since B is a (sparse) matrix, the sums will be matrices
-        # the sums above will give ints, so we need to convert to floats
-        row_sums = np.asarray(np.sum(B, axis=1).astype(np.float64)).flatten()
-        col_sums = np.asarray(np.sum(B, axis=0).astype(np.float64)).flatten()
+        row_sums = B.sum(axis=1).getA1().astype(np.float64)
+        col_sums = B.sum(axis=0).getA1().astype(np.float64)
 
         assert len(row_sums) == num_rows
         assert len(col_sums) == num_cols

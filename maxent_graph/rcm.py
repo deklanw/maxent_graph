@@ -16,13 +16,13 @@ class RCM(MaxentGraph):
         unreciprocated = np.multiply(A_dense, np.logical_xor(A_dense, A_t_dense))
         reciprocated = np.multiply(A_dense, A_t_dense)
 
-        self.k_unr_out = unreciprocated.sum(axis=1).getA1()
-        self.k_unr_in = unreciprocated.sum(axis=0).getA1()
-        self.k_recip = reciprocated.sum(axis=1).getA1()
+        self.k_unr_out = unreciprocated.sum(axis=1).astype(np.float64)
+        self.k_unr_in = unreciprocated.sum(axis=0).astype(np.float64)
+        self.k_recip = reciprocated.sum(axis=1).astype(np.float64)
 
         # sanity checking
-        k_out = A_dense.sum(axis=1).getA1()
-        k_in = A_dense.sum(axis=0).getA1()
+        k_out = A_dense.sum(axis=1).astype(np.float64)
+        k_in = A_dense.sum(axis=0).astype(np.float64)
 
         assert np.allclose(self.k_unr_out + self.k_recip, k_out)
         assert np.allclose(self.k_unr_in + self.k_recip, k_in)

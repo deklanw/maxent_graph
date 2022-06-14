@@ -9,6 +9,7 @@ models = [
     BICM(nx_get_B("data/opsahl-southernwomen_bipartite.graphml")),
     DECM(nx_get_A("data/residence_hall.graphml", weight_key="weight")),
     DECM(nx_get_A("data/macaques.graphml", weight_key="weight")),
+    DECM(nx_get_A("data/directed_with_loops.graphml", weight_key="count")),
     BWCM(
         nx_get_B(
             "data/plant_pol_kato.graphml",
