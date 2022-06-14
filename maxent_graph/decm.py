@@ -5,7 +5,7 @@ import scipy.sparse
 import jax.numpy as jnp
 
 from .MaxentGraph import MaxentGraph
-from .util import EPS, R_to_zero_to_inf, R_to_zero_to_one, jax_class_jit
+from .util import EPS, R_to_zero_to_inf, R_to_zero_to_one, flatten, jax_class_jit
 
 
 class DECM(MaxentGraph):
@@ -20,10 +20,10 @@ class DECM(MaxentGraph):
         Ensure you're following this convention. graph-tool, for instance, has this reversed.
         Just transpose before passing if that's the case.
         """
-        self.k_out = (W > 0).sum(axis=1).astype(np.float64)
-        self.k_in = (W > 0).sum(axis=0).astype(np.float64)
-        self.s_out = W.sum(axis=1).astype(np.float64)
-        self.s_in = W.sum(axis=0).astype(np.float64)
+        self.k_out = flatten((W > 0).sum(axis=1)).astype(np.float64)
+        self.k_in = flatten((W > 0).sum(axis=0)).astype(np.float64)
+        self.s_out = flatten(W.sum(axis=1)).astype(np.float64)
+        self.s_in = flatten(W.sum(axis=0)).astype(np.float64)
 
         self.num_nodes = len(self.k_out)
 

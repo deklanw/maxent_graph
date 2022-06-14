@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "maxent_graph"
-version = "0.3.0"
+version = "0.3.1"
 description = "Implementations of some max-entropy graph models. Also has support for statistically-validated computations with those models, e.g. bipartite projection, weighted backbone."
 authors = ["Deklan Webster <deklanw@gmail.com>"]
 license = "MIT"

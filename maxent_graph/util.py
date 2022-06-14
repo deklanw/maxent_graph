@@ -15,6 +15,14 @@ import math
 
 EPS = np.finfo(float).eps
 
+def flatten(a):
+    if type(a) == np.matrix:
+        return a.getA1()
+    elif type(a) == np.ndarray:
+        return a.flatten()
+    else:
+        raise ValueError("Expected matrix or ndarray")
+
 def print_percentiles(v):
     """
     Prints the min, 25th percentile, median, 75th percentile, and max.

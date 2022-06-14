@@ -7,7 +7,7 @@ import numba
 import jax.numpy as jnp
 
 from .MaxentGraph import MaxentGraph
-from .util import EPS, jax_class_jit, R_to_zero_to_inf, R_to_zero_to_one
+from .util import EPS, flatten, jax_class_jit, R_to_zero_to_inf, R_to_zero_to_one
 
 
 class BIECM(MaxentGraph):
@@ -17,11 +17,11 @@ class BIECM(MaxentGraph):
 
     def __init__(self, W, x_transform=0, y_transform=0):
         # validate?
-        row_strengths = W.sum(axis=1).getA1().astype(np.float64)
-        row_degrees = (W > 0).sum(axis=1).getA1().astype(np.float64)
+        row_strengths = flatten(W.sum(axis=1)).astype(np.float64)
+        row_degrees = flatten((W > 0).sum(axis=1)).astype(np.float64)
 
-        col_strengths = W.sum(axis=0).getA1().astype(np.float64)
-        col_degrees = (W > 0).sum(axis=0).getA1().astype(np.float64)
+        col_strengths = flatten(W.sum(axis=0)).astype(np.float64)
+        col_degrees = flatten((W > 0).sum(axis=0)).astype(np.float64)
 
         row_combinations = np.stack((row_degrees, row_strengths), axis=1)
         unique_rows, self.row_inverse, self.row_multiplicity = np.unique(

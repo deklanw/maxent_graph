@@ -5,7 +5,7 @@ import scipy.optimize
 import jax.numpy as jnp
 
 from .MaxentGraph import MaxentGraph
-from .util import EPS, jax_class_jit, R_to_zero_to_inf
+from .util import EPS, flatten, jax_class_jit, R_to_zero_to_inf
 
 
 class RCM(MaxentGraph):
@@ -16,13 +16,13 @@ class RCM(MaxentGraph):
         unreciprocated = np.multiply(A_dense, np.logical_xor(A_dense, A_t_dense))
         reciprocated = np.multiply(A_dense, A_t_dense)
 
-        self.k_unr_out = unreciprocated.sum(axis=1).astype(np.float64)
-        self.k_unr_in = unreciprocated.sum(axis=0).astype(np.float64)
-        self.k_recip = reciprocated.sum(axis=1).astype(np.float64)
+        self.k_unr_out = flatten(unreciprocated.sum(axis=1)).astype(np.float64)
+        self.k_unr_in = flatten(unreciprocated.sum(axis=0)).astype(np.float64)
+        self.k_recip = flatten(reciprocated.sum(axis=1)).astype(np.float64)
 
         # sanity checking
-        k_out = A_dense.sum(axis=1).astype(np.float64)
-        k_in = A_dense.sum(axis=0).astype(np.float64)
+        k_out = flatten(A_dense.sum(axis=1)).astype(np.float64)
+        k_in = flatten(A_dense.sum(axis=0)).astype(np.float64)
 
         assert np.allclose(self.k_unr_out + self.k_recip, k_out)
         assert np.allclose(self.k_unr_in + self.k_recip, k_in)

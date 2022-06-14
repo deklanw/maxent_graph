@@ -5,7 +5,7 @@ import scipy.sparse
 import jax.numpy as jnp
 
 from .MaxentGraph import MaxentGraph
-from .util import EPS, R_to_zero_to_inf, R_to_zero_to_one, jax_class_jit
+from .util import EPS, R_to_zero_to_inf, R_to_zero_to_one, flatten, jax_class_jit
 
 
 class ECM(MaxentGraph):
@@ -19,8 +19,8 @@ class ECM(MaxentGraph):
         # ignore self-loops
         W -= scipy.sparse.diags(W.diagonal())
 
-        self.k = (W > 0).sum(axis=1).astype(np.float64)
-        self.s = W.sum(axis=1).astype(np.float64)
+        self.k = flatten((W > 0).sum(axis=1)).astype(np.float64)
+        self.s = flatten(W.sum(axis=1)).astype(np.float64)
 
         self.num_nodes = len(self.k)
 

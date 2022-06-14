@@ -12,7 +12,7 @@ from tqdm import tqdm
 import jax.numpy as jnp
 
 from .MaxentGraph import MaxentGraph
-from .util import EPS, jax_class_jit, R_to_zero_to_inf
+from .util import EPS, flatten, jax_class_jit, R_to_zero_to_inf
 from . import poibin
 
 
@@ -23,8 +23,8 @@ class BICM(MaxentGraph):
 
         self.num_edges = B.count_nonzero()
 
-        row_sums = B.sum(axis=1).getA1().astype(np.float64)
-        col_sums = B.sum(axis=0).getA1().astype(np.float64)
+        row_sums = flatten(B.sum(axis=1)).astype(np.float64)
+        col_sums = flatten(B.sum(axis=0)).astype(np.float64)
 
         assert len(row_sums) == num_rows
         assert len(col_sums) == num_cols

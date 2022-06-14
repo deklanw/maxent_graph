@@ -7,7 +7,7 @@ import jax.numpy as jnp
 import pandas as pd
 
 from .MaxentGraph import MaxentGraph
-from .util import EPS, jax_class_jit, R_to_zero_to_one
+from .util import EPS, flatten, jax_class_jit, R_to_zero_to_one
 
 
 class BWCM(MaxentGraph):
@@ -20,8 +20,8 @@ class BWCM(MaxentGraph):
         self.B = B
         num_rows, num_cols = B.shape
 
-        row_sums = B.sum(axis=1).getA1().astype(np.float64)
-        col_sums = B.sum(axis=0).getA1().astype(np.float64)
+        row_sums = flatten(B.sum(axis=1)).astype(np.float64)
+        col_sums = flatten(B.sum(axis=0)).astype(np.float64)
 
         if np.any(np.where(row_sums == 0)) or np.any(np.where(col_sums == 0)):
             warnings.warn("Some nodes have 0 degree. Check on that")
