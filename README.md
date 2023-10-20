@@ -21,6 +21,7 @@ Todo:
 
 My implementation of the BiCM was inspired by https://github.com/mat701/BiCM and https://github.com/tsakim/bicm. See also: https://github.com/nicoloval/NEMtropy. One of these might meet your needs better.
 
+---
 [1] Saracco, Fabio, Mika J Straka, Riccardo Di Clemente, Andrea Gabrielli, Guido Caldarelli, and Tiziano Squartini. “Inferring Monopartite Projections of Bipartite Networks: An Entropy-Based Approach.” New Journal of Physics 19, no. 5 (May 17, 2017): 053022. https://doi.org/10.1088/1367-2630/aa6b38.
 
 [2] Gemmetto, Valerio, Alessio Cardillo, and Diego Garlaschelli. “Irreducible Network Backbones: Unbiased Graph Filtering via Maximum Entropy.” ArXiv:1706.00230 [Physics], June 9, 2017. http://arxiv.org/abs/1706.00230.
