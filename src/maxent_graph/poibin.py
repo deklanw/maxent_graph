@@ -126,7 +126,7 @@ def gaussian_pdf(x):
     around 6x faster with jit than without
     """
     # ** is slightly faster than np.power for some reason
-    g = (2 * math.pi) ** -0.5 * np.exp(-0.5 * x ** 2)
+    g = (2 * math.pi) ** -0.5 * np.exp(-0.5 * x**2)
     return g
 
 
@@ -159,7 +159,7 @@ n
 def rna_mean_std_gamma(ps):
     mean = np.sum(ps)
     std = np.sqrt(np.sum(ps * (1 - ps)))
-    gamma = std ** -3 * np.sum(ps * (1 - ps) * (1 - 2 * ps))
+    gamma = std**-3 * np.sum(ps * (1 - ps) * (1 - 2 * ps))
 
     return mean, std, gamma
 
@@ -168,7 +168,7 @@ def rna_mean_std_gamma(ps):
 def rna_mean_std_gamma_with_multiplicity(ps, mult):
     mean = np.sum(mult * ps)
     std = np.sqrt(np.sum(mult * (ps * (1 - ps))))
-    gamma = std ** -3 * np.sum(mult * (ps * (1 - ps) * (1 - 2 * ps)))
+    gamma = std**-3 * np.sum(mult * (ps * (1 - ps) * (1 - 2 * ps)))
 
     return mean, std, gamma
 
@@ -183,7 +183,7 @@ def rna_cdf(k, mean, std, gamma):
     big_phi_x = gaussian_cdf(x)
 
     # can return invalid probabilities. just clip.
-    p = big_phi_x + (gamma * (1 - x ** 2) * phi_x) / 6
+    p = big_phi_x + (gamma * (1 - x**2) * phi_x) / 6
 
     # can't use clip in numba
     if p <= 0:
@@ -212,7 +212,7 @@ def binomial_cdf(x, n, p):
     """
     Copied from  https://stackoverflow.com/a/45869209/4749956
     Faster than scipy (the next fastest I could find). I suppose writing it up in C might be even faster.
-    
+
     Falls apart for values close to 1.
     """
     cdf = 0
@@ -238,6 +238,7 @@ def poisson_wh_cdf(k, lam):
 
 
 LOG_PI = math.log(math.pi)
+
 
 # refinement of stirling approximation by ramanujan
 @jit(nopython=True)

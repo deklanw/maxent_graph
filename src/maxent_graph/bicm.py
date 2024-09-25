@@ -227,7 +227,7 @@ class BICM(MaxentGraph):
         for i, _ in enumerate(row_degrees):
             for j, _ in enumerate(col_degrees):
                 kk = row_degrees[i] * col_degrees[j]
-                s += row_mult[i] * col_mult[j] * -2 * kk ** 2 / (1 + x * kk) ** 3
+                s += row_mult[i] * col_mult[j] * -2 * kk**2 / (1 + x * kk) ** 3
         return s
 
     @staticmethod
@@ -265,7 +265,7 @@ class BICM(MaxentGraph):
         print(
             f"Total unique row degree pairs to check {scipy.special.comb(self.n_row_degrees, 2)}"
         )
-        for (i, j) in tqdm(itertools.combinations(range(self.n_row_degrees), 2)):
+        for i, j in tqdm(itertools.combinations(range(self.n_row_degrees), 2)):
             degree_i = self.row_degrees[i]
             degree_j = self.row_degrees[j]
 

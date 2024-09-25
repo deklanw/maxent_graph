@@ -131,7 +131,6 @@ class DECM(MaxentGraph):
 
         for i in range(N):
             for j in range(N):
-
                 xx_out = x_out[i] * x_in[j]
                 yy_out = y_out[i] * y_in[j]
 

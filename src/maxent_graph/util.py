@@ -15,6 +15,7 @@ import math
 
 EPS = np.finfo(float).eps
 
+
 def flatten(a):
     if type(a) == np.matrix:
         return a.getA1()
@@ -22,6 +23,7 @@ def flatten(a):
         return a.flatten()
     else:
         raise ValueError("Expected matrix or ndarray")
+
 
 def print_percentiles(v):
     """
@@ -109,6 +111,7 @@ def softplus_inv(x):
 
 
 R_to_zero_to_inf = [(jit(jnp.exp), jit(jnp.log)), (jit(jax.nn.softplus), softplus_inv)]
+
 
 ### R <=> (0,1) homeomorphisms
 @jit

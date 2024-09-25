@@ -43,4 +43,3 @@ def test_dc_fft():
         )
 
         assert np.allclose(r[larger_probs].ravel(), correct_probs)
-
