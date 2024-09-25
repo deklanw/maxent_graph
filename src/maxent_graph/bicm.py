@@ -2,7 +2,6 @@ import numpy as np
 import scipy.optimize
 import scipy.special
 import pandas as pd
-import math
 import itertools
 import numba
 import time

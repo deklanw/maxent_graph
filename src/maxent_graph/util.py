@@ -10,16 +10,15 @@ from networkx.algorithms import bipartite
 from tabulate import tabulate
 from functools import partial
 from jax import jvp, grad, jit
-import math
 
 
 EPS = np.finfo(float).eps
 
 
 def flatten(a):
-    if type(a) == np.matrix:
+    if isinstance(a, np.matrix):
         return a.getA1()
-    elif type(a) == np.ndarray:
+    elif isinstance(a, np.ndarray):
         return a.flatten()
     else:
         raise ValueError("Expected matrix or ndarray")
@@ -83,9 +82,7 @@ def nx_get_B(fn, weight_key=None, bipartite_key=None):
         bottom_nodes, top_nodes = bipartite.sets(g)
     else:
         bottom_nodes = [
-            node
-            for node, data in g.nodes(data=True)
-            if data.get(bipartite_key) == False
+            node for node, data in g.nodes(data=True) if not data.get(bipartite_key)
         ]
         top_nodes = None
 
