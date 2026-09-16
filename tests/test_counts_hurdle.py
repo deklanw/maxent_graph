@@ -26,6 +26,10 @@ def models(**kwargs):
     ]
 
 
+def both_positive_parts():
+    return models() + models(positive="ztp")
+
+
 @pytest.fixture(scope="module")
 def bipartite_model():
     return BIHPCM(random_bipartite()).fit()
@@ -51,7 +55,7 @@ def test_presence_part_is_the_bicm():
     np.testing.assert_array_equal(model.presence, xy / (1 + xy))
 
 
-@pytest.mark.parametrize("model", models())
+@pytest.mark.parametrize("model", both_positive_parts())
 def test_expected_strengths_over_positive_dyads(model):
     model.fit()
     np.testing.assert_allclose(
@@ -62,7 +66,7 @@ def test_expected_strengths_over_positive_dyads(model):
     )
 
 
-@pytest.mark.parametrize("model", models())
+@pytest.mark.parametrize("model", both_positive_parts())
 def test_expected_degrees_reproduce_observed(model):
     model.fit()
     np.testing.assert_allclose(
@@ -73,9 +77,10 @@ def test_expected_degrees_reproduce_observed(model):
     )
 
 
-def test_unit_weights_drive_the_rate_to_zero():
+@pytest.mark.parametrize("positive", ["shifted", "ztp"])
+def test_unit_weights_drive_the_rate_to_zero(positive):
     B = (random_bipartite() > 0).astype(float)
-    model = BIHPCM(B).fit()
+    model = BIHPCM(B, positive=positive).fit()
 
     assert np.all(model.rate == 0)
     # a zero rate is a point mass at one, so the model is the BiCM again
@@ -87,20 +92,51 @@ def test_unit_weights_drive_the_rate_to_zero():
 def test_partially_unit_nodes_are_peeled_rather_than_chased():
     B = random_bipartite()
     B[0] = (B[0] > 0).astype(float)  # row 0 carries only unit weights
-    model = BIHPCM(B).fit()
+    model = BIHPCM(B, positive="ztp").fit()
 
     assert np.all(model.rate[0] == 0)
     assert model.fit_info["rate_zero_dyads"] >= (B[0] > 0).sum()
     assert model.positive_strength_error() < 1e-6
 
 
+def positive_dyads(model, count=3):
+    """
+    Dyads with a strictly positive rate: the closed forms below are stated for
+    those, and the rate-zero dyads have their own test.
+    """
+    chosen = np.argwhere(model.rate > 0)[:count]
+    return (chosen[:, 0], chosen[:, 1])
+
+
 @pytest.mark.parametrize("model", models())
-def test_joint_quantities_follow_the_hurdle_formulae(model):
+def test_shifted_quantities_follow_the_stated_formulae(model):
     model.fit()
-    # the stated formulae assume a positive rate; the peeled dyads, whose rate
-    # is zero, are covered by test_unit_weights_drive_the_rate_to_zero
-    positive = np.argwhere(model.rate > 0)[:3]
-    dyads = (positive[:, 0], positive[:, 1])
+    assert model.positive == "shifted"
+
+    dyads = positive_dyads(model)
+    p = model.presence[dyads]
+    lam = model.rate[dyads]
+
+    # w - 1 is Poisson, so the conditional mean is 1 + lam and its variance lam
+    np.testing.assert_allclose(model.mean(dyads), p * (1 + lam))
+    np.testing.assert_allclose(model.var(dyads), p * lam + p * (1 - p) * (1 + lam) ** 2)
+
+    np.testing.assert_allclose(model.pmf(0, dyads), 1 - p)
+    for w in (1, 2, 5):
+        np.testing.assert_allclose(
+            model.pmf(w, dyads), p * scipy.stats.poisson.pmf(w - 1, lam)
+        )
+        # P(w >= m) = p * P_Pois(X >= m - 1)
+        np.testing.assert_allclose(
+            model.sf(w, dyads), p * scipy.stats.poisson.sf(w - 2, lam)
+        )
+    np.testing.assert_allclose(model.sf(0, dyads), 1.0)
+
+
+@pytest.mark.parametrize("model", models(positive="ztp"))
+def test_truncated_quantities_follow_the_stated_formulae(model):
+    model.fit()
+    dyads = positive_dyads(model)
     p = model.presence[dyads]
     lam = model.rate[dyads]
     conditional = lam / -np.expm1(-lam)
@@ -121,6 +157,55 @@ def test_joint_quantities_follow_the_hurdle_formulae(model):
 
 
 @pytest.mark.parametrize("model", models())
+def test_shifted_part_is_a_poisson_fit_on_the_weight_minus_one(model):
+    """
+    The whole point of shifting rather than truncating: the conditional mean
+    is linear in the rate, so the strength constraint reduces to a Poisson
+    configuration model on ``w - 1`` with targets ``s_i - k_i``.
+    """
+    model.fit()
+    mask = model.adjacency
+    rates = np.where(mask, model.rate, 0.0)
+
+    np.testing.assert_allclose(
+        model.layout.row_totals(rates),
+        model.row_strengths - model.row_degrees,
+        atol=1e-9,
+    )
+    np.testing.assert_allclose(
+        model.layout.col_totals(rates),
+        model.col_strengths - model.col_degrees,
+        atol=1e-9,
+    )
+
+
+def test_shifted_part_reaches_the_boundary_in_one_step():
+    """
+    A node carrying only unit weights has target zero and so rate exactly
+    zero, with no peeling and no creeping -- unlike the truncated part, which
+    needs both.
+    """
+    B = random_bipartite()
+    B[0] = (B[0] > 0).astype(float)
+
+    shifted = BIHPCM(B).fit()
+    assert np.all(shifted.rate[0] == 0)
+    assert shifted.positive_strength_error() < 1e-9
+
+    truncated = BIHPCM(B, positive="ztp").fit()
+    assert np.all(truncated.rate[0] == 0)
+    # and the two are genuinely different fits elsewhere
+    assert not np.allclose(shifted.rate, truncated.rate)
+
+
+def test_shifted_part_converges_at_least_as_easily():
+    for W, cls in [(kato(), BIHPCM), (kangaroo(), UHPCM)]:
+        shifted = cls(W).fit()
+        truncated = cls(W, positive="ztp").fit()
+        assert shifted.fit_info["iterations"] <= truncated.fit_info["iterations"]
+
+
+@pytest.mark.parametrize("model", both_positive_parts())
 def test_moments_match_a_brute_force_sum(model):
     model.fit()
     dyads = (np.array([0, 1]), np.array([2, 3]))
@@ -133,7 +218,7 @@ def test_moments_match_a_brute_force_sum(model):
     np.testing.assert_allclose(((grid - mean) ** 2 * pmf).sum(axis=0), model.var(dyads))
 
 
-@pytest.mark.parametrize("model", models())
+@pytest.mark.parametrize("model", both_positive_parts())
 def test_samples_respect_the_layout_and_the_mean(model):
     model.fit()
     draws = model.sample(4000, rng=np.random.default_rng(0))
@@ -169,10 +254,27 @@ def test_self_loops_are_refused():
 def test_kind_validation():
     with pytest.raises(ValueError, match="kind"):
         BIHPCM(random_bipartite(), kind="something")
+    with pytest.raises(ValueError, match="positive"):
+        BIHPCM(random_bipartite(), positive="something")
+
+
+def test_zero_inflation_implies_a_truncated_positive_part():
+    assert BIHPCM(random_bipartite()).positive == "shifted"
+    assert BIHPCM(random_bipartite(), kind="zip").positive == "ztp"
+    with pytest.raises(ValueError, match="zero-truncated"):
+        BIHPCM(random_bipartite(), kind="zip", positive="shifted")
 
 
 @pytest.mark.parametrize(
-    "model", [BIHPCM(kato()), UHPCM(kangaroo()), DHPCM(residence_hall())]
+    "model",
+    [
+        BIHPCM(kato()),
+        UHPCM(kangaroo()),
+        DHPCM(residence_hall()),
+        BIHPCM(kato(), positive="ztp"),
+        UHPCM(kangaroo(), positive="ztp"),
+        DHPCM(residence_hall(), positive="ztp"),
+    ],
 )
 def test_real_networks_fit(model):
     model.fit()

@@ -2,8 +2,15 @@
 Family C: hurdle Poisson configuration models.
 
 The count-aware counterpart of the BiECM. Presence is degree constrained and
-the positive weight is strength constrained, but the positive part is a
-zero-truncated Poisson rather than a geometric, which is a much lighter tail.
+the positive weight is strength constrained, but the positive part is Poisson
+rather than geometric, which is a much lighter tail.
+
+The BiECM's positive part is a *shifted* geometric -- ``w - 1`` is geometric,
+which is why its p-values carry ``y**(w - 1)`` -- so the faithful count
+analogue is a shifted Poisson, ``w - 1 ~ Poisson(u_i v_a)``, and that is the
+default here. Zero truncation is available as an option, and is what zero
+inflation implies, but it buys a transcendental link for nothing: see
+``ShiftedPoisson`` for why the shifted form fits so much more easily.
 
 The likelihood factorises exactly -- nothing in the presence part appears in
 the positive part or vice versa -- so the two halves are fitted independently,
@@ -21,10 +28,11 @@ from ..bicm import BICM
 from ..dbcm import DBCM
 from ..ubcm import UBCM
 from .base import DyadModel, solve_product_form
-from .dists import Hurdle, ZeroTruncatedPoisson
+from .dists import Hurdle, ShiftedPoisson, ZeroTruncatedPoisson
 from .layout import DyadLayout, dense
 
 KINDS = ("hurdle", "zip")
+POSITIVE_PARTS = {"shifted": ShiftedPoisson, "ztp": ZeroTruncatedPoisson}
 
 PRESENCE_MODELS = {"bipartite": BICM, "undirected": UBCM, "directed": DBCM}
 
@@ -82,11 +90,12 @@ class HurdlePoissonCM(DyadModel):
     """
     Hurdle Poisson configuration model over an arbitrary dyad set.
 
-    ``a_ij ~ Bernoulli(x_i y_j / (1 + x_i y_j))`` and, given presence,
-    ``w_ij ~ ZTP(u_i v_j)``. The presence half is the binary configuration
-    model and is fitted by the existing BiCM / UBCM / DBCM code; the positive
-    half is fitted on the observed edges only, so its constraint is that the
-    expected strength *over the observed edges* matches the observed strength.
+    ``a_ij ~ Bernoulli(x_i y_j / (1 + x_i y_j))`` and, given presence, a
+    Poisson positive part with rate ``u_i v_j``. The presence half is the
+    binary configuration model and is fitted by the existing BiCM / UBCM /
+    DBCM code; the positive half is fitted on the observed edges only, so its
+    constraint is that the expected strength *over the observed edges* matches
+    the observed strength.
 
     Parameters
     ----------
@@ -96,6 +105,12 @@ class HurdlePoissonCM(DyadModel):
         a ZIP with inflation ``1 - pi`` and rate ``lam`` is a hurdle with
         ``p = pi (1 - exp(-lam))`` -- but a different parameterisation, whose
         likelihood no longer factorises and which is fitted by EM.
+    positive : {"shifted", "ztp"}
+        The positive part: ``w - 1 ~ Poisson(lam)``, matching the BiECM's
+        shifted geometric, or a zero-truncated Poisson. Defaults to
+        ``"shifted"``, except that ``kind="zip"`` implies ``"ztp"``, since
+        that is what conditioning a zero-inflated Poisson on being positive
+        gives.
 
     Notes
     -----
@@ -107,7 +122,7 @@ class HurdlePoissonCM(DyadModel):
     actually constrains.
     """
 
-    def __init__(self, W, layout, kind="hurdle"):
+    def __init__(self, W, layout, kind="hurdle", positive=None):
         if layout.self_loops:
             raise NotImplementedError(
                 "the binary presence models ignore self-loops, so the hurdle "
@@ -116,13 +131,30 @@ class HurdlePoissonCM(DyadModel):
         if kind not in KINDS:
             raise ValueError(f"kind must be one of {KINDS}")
 
+        if positive is None:
+            positive = "ztp" if kind == "zip" else "shifted"
+        elif positive not in POSITIVE_PARTS:
+            raise ValueError(f"positive must be one of {tuple(POSITIVE_PARTS)}")
+        elif kind == "zip" and positive != "ztp":
+            raise ValueError(
+                "conditioning a zero-inflated Poisson on being positive gives a "
+                "zero-truncated Poisson, so kind='zip' needs positive='ztp'"
+            )
+
         super().__init__(W, layout)
         self.kind = kind
+        self.positive = positive
         self.presence = None
         self.rate = None
         self.pi = None
         self.presence_model = None
         self.presence_solution = None
+
+    def positive_dist(self, rate):
+        """
+        The positive part at the given rates.
+        """
+        return POSITIVE_PARTS[self.positive](rate)
 
     # ------------------------------------------------------------------
     # presence
@@ -194,6 +226,84 @@ class HurdlePoissonCM(DyadModel):
         return active, row_target, col_target, peeled
 
     def _fit_rate(self, mask, tol, max_iter, damping, strength_tol=1e-6):
+        """
+        Solves the positive part's strength constraints over ``mask``.
+        """
+        if self.positive == "shifted":
+            return self._fit_rate_shifted(mask, tol, max_iter, damping, strength_tol)
+        return self._fit_rate_truncated(mask, tol, max_iter, damping, strength_tol)
+
+    def _fit_rate_shifted(self, mask, tol, max_iter, damping, strength_tol):
+        """
+        Solves the shifted Poisson strength constraints over ``mask``.
+
+        ``E[w | a = 1] = 1 + lam``, so the constraint is just a Poisson fit on
+        ``w - 1`` with targets ``s_i - k_i``. That is linear in the rates, and
+        a node carrying only unit weights has target zero and so rate exactly
+        zero, in one step -- which is the whole reason to prefer this positive
+        part to the truncated one.
+        """
+        support = mask.astype(np.float64)
+        row_target = self.row_strengths - self.layout.row_totals(support)
+        col_target = self.col_strengths - self.layout.col_totals(support)
+        excess = row_target.sum()
+
+        if excess <= 0:
+            # every weight is one
+            return np.zeros(self.layout.shape), {
+                "iterations": 0,
+                "delta": 0.0,
+                "rate_zero_dyads": int(mask.sum()),
+            }
+
+        scale = np.sqrt(excess)
+
+        def update_row(u, v):
+            return _safe_ratio(row_target, support @ v)
+
+        def update_col(u, v):
+            return _safe_ratio(col_target, support.T @ u)
+
+        u, v, info = solve_product_form(
+            update_row,
+            update_col,
+            row_target / scale,
+            col_target / scale,
+            tied=self.layout.tied,
+            tol=tol,
+            max_iter=max_iter,
+            damping=damping,
+            converged=self._constraint_check(mask, strength_tol),
+            check_after=max(500, max_iter // 10),
+            name=type(self).__name__,
+        )
+        rate = np.where(mask, self.layout.dyad_scale * np.outer(u, v), 0.0)
+        zeros = int((mask & (rate == 0)).sum())
+        if zeros:
+            info["rate_zero_dyads"] = zeros
+        return rate, info
+
+    def _constraint_check(self, mask, strength_tol):
+        """
+        Stopping rule on the strength residual rather than on the parameters.
+        """
+        threshold = strength_tol * max(1.0, self.total_weight)
+        scale = self.layout.dyad_scale
+
+        def constraints_met(u, v):
+            rate = np.where(mask, scale * np.outer(u, v), 0.0)
+            conditional = np.where(mask, self.positive_dist(rate).mean(), 0.0)
+            return (
+                max(
+                    np.max(np.abs(conditional.sum(axis=1) - self.row_strengths)),
+                    np.max(np.abs(conditional.sum(axis=0) - self.col_strengths)),
+                )
+                < threshold
+            )
+
+        return constraints_met
+
+    def _fit_rate_truncated(self, mask, tol, max_iter, damping, strength_tol):
         """
         Solves the zero-truncated Poisson strength constraints over ``mask``.
 
@@ -418,6 +528,7 @@ class HurdlePoissonCM(DyadModel):
 
         self.fit_info = {
             "kind": self.kind,
+            "positive": self.positive,
             "iterations": info.get("iterations"),
             "degree_error": self.degree_error(),
             "positive_strength_error": self.positive_strength_error(),
@@ -436,7 +547,7 @@ class HurdlePoissonCM(DyadModel):
     def _dyad_mean(self):
         return np.where(
             self.layout.support,
-            self.presence * ZeroTruncatedPoisson(self.rate).mean(),
+            self.presence * self.positive_dist(self.rate).mean(),
             0.0,
         )
 
@@ -464,14 +575,14 @@ class HurdlePoissonCM(DyadModel):
         """
         self._require_fit()
         conditional = np.where(
-            self.adjacency, ZeroTruncatedPoisson(self.rate).mean(), 0.0
+            self.adjacency, self.positive_dist(self.rate).mean(), 0.0
         )
         return self.layout.row_totals(conditional / self.layout.dyad_scale)
 
     def expected_positive_col_strengths(self):
         self._require_fit()
         conditional = np.where(
-            self.adjacency, ZeroTruncatedPoisson(self.rate).mean(), 0.0
+            self.adjacency, self.positive_dist(self.rate).mean(), 0.0
         )
         return self.layout.col_totals(conditional / self.layout.dyad_scale)
 
@@ -501,7 +612,7 @@ class HurdlePoissonCM(DyadModel):
         self._require_fit()
         return Hurdle(
             self._take(self.presence, idx),
-            ZeroTruncatedPoisson(self._take(self.rate, idx)),
+            self.positive_dist(self._take(self.rate, idx)),
         )
 
 
@@ -510,9 +621,11 @@ class BIHPCM(HurdlePoissonCM):
     Bipartite hurdle Poisson configuration model. Presence is the BiCM.
     """
 
-    def __init__(self, B, kind="hurdle"):
+    def __init__(self, B, kind="hurdle", positive=None):
         B = dense(B)
-        super().__init__(B, DyadLayout.bipartite(*B.shape), kind=kind)
+        super().__init__(
+            B, DyadLayout.bipartite(*B.shape), kind=kind, positive=positive
+        )
 
 
 class UHPCM(HurdlePoissonCM):
@@ -520,9 +633,11 @@ class UHPCM(HurdlePoissonCM):
     Undirected hurdle Poisson configuration model. Presence is the UBCM.
     """
 
-    def __init__(self, A, kind="hurdle"):
+    def __init__(self, A, kind="hurdle", positive=None):
         A = dense(A)
-        super().__init__(A, DyadLayout.undirected(A.shape[0]), kind=kind)
+        super().__init__(
+            A, DyadLayout.undirected(A.shape[0]), kind=kind, positive=positive
+        )
 
 
 class DHPCM(HurdlePoissonCM):
@@ -530,6 +645,8 @@ class DHPCM(HurdlePoissonCM):
     Directed hurdle Poisson configuration model. Presence is the DBCM.
     """
 
-    def __init__(self, A, kind="hurdle"):
+    def __init__(self, A, kind="hurdle", positive=None):
         A = dense(A)
-        super().__init__(A, DyadLayout.directed(A.shape[0]), kind=kind)
+        super().__init__(
+            A, DyadLayout.directed(A.shape[0]), kind=kind, positive=positive
+        )

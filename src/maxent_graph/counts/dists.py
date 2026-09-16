@@ -65,6 +65,48 @@ class ZeroTruncatedPoisson:
         return np.maximum(scipy.stats.poisson.ppf(q, self.lam), 1.0)
 
 
+class ShiftedPoisson:
+    """
+    ``1 + Poisson(lam)`` on ``w = 1, 2, ...``.
+
+    The count analogue of the ECM's positive part, which is a shifted
+    geometric rather than a truncated one. Shifting rather than truncating
+    keeps the link linear: the conditional mean is ``1 + lam``, so a strength
+    constraint on the positive dyads is a plain Poisson fit on ``w - 1`` and a
+    node carrying only unit weights lands on ``lam = 0`` in a single step
+    instead of creeping towards it.
+
+    ``lam = 0`` is a point mass at one and is handled throughout.
+    """
+
+    def __init__(self, lam):
+        self.lam = np.maximum(np.asarray(lam, dtype=np.float64), 0.0)
+
+    def mean(self):
+        return 1.0 + self.lam
+
+    def var(self):
+        return self.lam
+
+    def pmf(self, w):
+        w = np.asarray(w)
+        return np.where(w >= 1, scipy.stats.poisson.pmf(w - 1, self.lam), 0.0)
+
+    def cdf(self, k):
+        k = np.floor(np.asarray(k))
+        return np.where(k < 1, 0.0, scipy.stats.poisson.cdf(k - 1, self.lam))
+
+    def sf(self, k):
+        k = np.floor(np.asarray(k))
+        return np.where(k < 1, 1.0, scipy.stats.poisson.sf(k - 1, self.lam))
+
+    def rvs(self, size=None, random_state=None):
+        rng = np.random.default_rng(random_state)
+        if size is None:
+            size = np.shape(self.lam)
+        return 1.0 + scipy.stats.poisson.rvs(self.lam, size=size, random_state=rng)
+
+
 class ShiftedGeometric:
     """
     ``P(X = w) = (1 - y) y**(w - 1)`` on ``w = 1, 2, ...``.
