@@ -22,7 +22,7 @@ in bipartite, undirected and directed flavours.
 | --- | --- | --- | --- | --- |
 | Poisson | `BIPCM` | `UPCM` | `DPCM` | Poisson, so `var == mean` |
 | Negative binomial | `BINBCM` | `UNBCM` | `DNBCM` | `var == mean + mean^2 / r` |
-| Hurdle Poisson | `BIHPCM` | `UHPCM` | `DHPCM` | Bernoulli presence, zero-truncated Poisson weight |
+| Hurdle Poisson | `BIHPCM` | `UHPCM` | `DHPCM` | Bernoulli presence, shifted Poisson weight |
 
 ```python
 from maxent_graph import BIPCM, aggregate_blocks
@@ -47,12 +47,33 @@ is noticeably worse, so prefer the convolution where you can afford it. It also
 works on a solved BiCM or BiECM through `from_bicm` / `from_biecm`, and with a
 singleton partition it reproduces the BiECM's own edge p-values.
 
-Three things worth knowing before reading the numbers:
+The negative binomial models are the Gamma-Poisson mixture over the Poisson
+one: the means stay at `s_i * s_a / W` and `r` measures how far dyad intensities
+vary beyond Poisson noise, which turns "Poisson or geometric?" into an estimated
+quantity. `fit_info` carries the evidence directly:
 
-- The negative binomial score equations are weighted, so the likelihood fit does
-  not reproduce the observed strengths for finite `r`. Pass
-  `fit(constrain_strengths=True)` to pin the means to the Poisson solution and
-  estimate only the dispersion around them.
+```python
+model = BINBCM(W).fit()
+model.r, model.r_std_error
+model.fit_info["loglik"], model.fit_info["loglik_poisson"]
+model.fit_info["overdispersion_lr"], model.fit_info["overdispersion_p"]
+```
+
+The Poisson model is the boundary of the family, so that p-value is against an
+even mixture of a point mass at zero and a chi-square on one degree of freedom,
+not a plain chi-square. Pass `fit(constrain_strengths=False)` for the
+unrestricted maximum likelihood fit instead, whose weighted score equations
+leave the means free and so do *not* reproduce the strengths.
+
+The hurdle models' positive part is a shifted Poisson -- `w - 1 ~ Poisson(lam)`
+-- matching the BiECM's shifted geometric. `positive="ztp"` gives a
+zero-truncated Poisson instead, which is what `kind="zip"` implies; the shifted
+form is the default because its conditional mean `1 + lam` is linear in the
+rate, which makes the fit a plain Poisson fit on `w - 1` with targets
+`s_i - k_i`.
+
+Two more things worth knowing before reading the numbers:
+
 - The hurdle models fit their positive half on the observed edges only, as the
   factorised likelihood implies, so their *joint* expected strength -- which
   sums over absent dyads too -- is below the observed one.
