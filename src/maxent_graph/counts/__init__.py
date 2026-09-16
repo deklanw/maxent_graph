@@ -10,3 +10,7 @@ interface.
 
 from .base import DyadModel as DyadModel
 from .layout import DyadLayout as DyadLayout
+from .poisson import BIPCM as BIPCM
+from .poisson import DPCM as DPCM
+from .poisson import UPCM as UPCM
+from .poisson import PoissonCM as PoissonCM

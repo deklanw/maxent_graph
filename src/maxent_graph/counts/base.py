@@ -222,14 +222,18 @@ class DyadModel(ABC):
         P(X == w).
         """
         idx = self._index(dyads)
-        return self._mask_prob(np.asarray(self._dist(idx).pmf(w), dtype=np.float64), idx)
+        return self._mask_prob(
+            np.asarray(self._dist(idx).pmf(w), dtype=np.float64), idx
+        )
 
     def cdf(self, w, dyads=None):
         """
         P(X <= w).
         """
         idx = self._index(dyads)
-        return self._mask_prob(np.asarray(self._dist(idx).cdf(w), dtype=np.float64), idx)
+        return self._mask_prob(
+            np.asarray(self._dist(idx).cdf(w), dtype=np.float64), idx
+        )
 
     def sf(self, w, dyads=None):
         """
