@@ -165,6 +165,20 @@ def test_samples_have_the_right_mean(model):
     assert np.all(np.abs(empirical - expected) < 5 * se + 1e-9)
 
 
+@pytest.mark.parametrize("model", all_models())
+def test_pvalues_evaluate_sf_at_the_observed_weights(model):
+    model.fit()
+    dyads = np.nonzero(model.weights)
+    np.testing.assert_allclose(
+        model.pvalues(dyads), model.sf(model.weights[dyads], dyads)
+    )
+
+    full = model.pvalues()
+    assert full.shape == model.layout.shape
+    np.testing.assert_allclose(full[dyads], model.pvalues(dyads))
+    assert np.all((full[model.layout.support] >= 0) & (full[model.layout.support] <= 1))
+
+
 def test_unfitted_model_refuses_to_answer():
     model = BIPCM(random_bipartite())
     with pytest.raises(RuntimeError, match="not fitted"):

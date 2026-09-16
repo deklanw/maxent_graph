@@ -288,6 +288,18 @@ class DyadModel(ABC):
         values = np.asarray(self._dist(idx).sf(w - 1), dtype=np.float64)
         return self._mask_prob(values, idx)
 
+    def pvalues(self, dyads=None):
+        """
+        Upper-tail probability of each dyad's *observed* weight,
+        ``P(X >= w_observed)``.
+
+        This is the usual reason to want ``sf``, and saves lining the observed
+        weights up with the selection by hand. ``model.pvalues(W.nonzero())``
+        gives one p-value per edge.
+        """
+        idx = self._index(dyads)
+        return self.sf(self._take(self.weights, idx), dyads)
+
     def cell_distribution(self, dyads):
         """
         Exact distribution of the summed weight over ``dyads``, or None when
