@@ -245,6 +245,16 @@ class DyadModel(ABC):
         values = np.asarray(self._dist(idx).sf(w - 1), dtype=np.float64)
         return self._mask_prob(values, idx)
 
+    def cell_distribution(self, dyads):
+        """
+        Exact distribution of the summed weight over ``dyads``, or None when
+        the family has no closed form for it.
+
+        Used by the partition aggregation utility to give a block its own tail
+        probability instead of a normal approximation.
+        """
+        return
+
     def loglik(self):
         """
         Log-likelihood of the observed weights under the fitted model.

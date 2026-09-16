@@ -135,11 +135,7 @@ class DyadLayout:
         if self.tied and not np.allclose(A, A.T):
             raise ValueError("an undirected layout needs a symmetric weight matrix")
 
-        if (
-            self.kind != "bipartite"
-            and not self.self_loops
-            and np.any(np.diag(A) != 0)
-        ):
+        if self.kind != "bipartite" and not self.self_loops and np.any(np.diag(A) != 0):
             raise ValueError(
                 "the diagonal carries weight but self_loops=False. "
                 "pass self_loops=True or zero the diagonal."

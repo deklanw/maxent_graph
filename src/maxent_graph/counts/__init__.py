@@ -8,6 +8,10 @@ directed bookkeeping and :mod:`maxent_graph.counts.base` for the common
 interface.
 """
 
+from .adapters import DyadTable as DyadTable
+from .adapters import from_bicm as from_bicm
+from .adapters import from_biecm as from_biecm
+from .aggregate import aggregate_blocks as aggregate_blocks
 from .base import DyadModel as DyadModel
 from .layout import DyadLayout as DyadLayout
 from .poisson import BIPCM as BIPCM

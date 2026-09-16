@@ -205,6 +205,28 @@ class PoissonCM(DyadModel):
             N=np.round(self._take(row, idx)).astype(np.int64),
         )
 
+    def cell_distribution(self, dyads):
+        """
+        A sum of independent Poissons is Poisson; under stub matching a block
+        total counts the row stubs of block r landing on the column stubs of
+        block s, which is hypergeometric.
+        """
+        self._require_fit()
+        rows, cols = dyads
+        if not self.exact:
+            return scipy.stats.poisson(self.mean(dyads).sum())
+
+        unique_rows = np.unique(rows)
+        unique_cols = np.unique(cols)
+        if len(rows) != len(unique_rows) * len(unique_cols):
+            # not a full block rectangle, so the stub counts do not line up
+            return None
+        return scipy.stats.hypergeom(
+            M=round(self.total_weight),
+            n=round(self.col_strengths[unique_cols].sum()),
+            N=round(self.row_strengths[unique_rows].sum()),
+        )
+
     def loglik(self):
         if not self.exact:
             return super().loglik()
