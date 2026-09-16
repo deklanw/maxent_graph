@@ -25,6 +25,9 @@ def solve_product_form(
     tol=1e-12,
     max_iter=5000,
     damping=1.0,
+    converged=None,
+    check_every=25,
+    check_after=0,
     name="model",
 ):
     """
@@ -38,6 +41,14 @@ def solve_product_form(
     ``damping`` below one mixes each update with the previous iterate. A tied
     model updates every node against every other at once and can oscillate
     without it; alternating updates generally do not need it.
+
+    ``converged(x, y)`` is an optional second stopping rule, checked every
+    ``check_every`` iterations once ``check_after`` have passed. Use it when
+    what matters is that the constraints are met rather than that the
+    parameters have stopped moving -- the two part company when the maximum
+    sits on a boundary the iteration can only creep towards. Holding it back
+    for a while first lets the well-behaved cases converge properly instead of
+    settling for the looser rule.
     """
     x = np.array(x0, dtype=np.float64)
     y = x if tied else np.array(y0, dtype=np.float64)
@@ -61,6 +72,22 @@ def solve_product_form(
 
         if delta < tol:
             return x, y, {"iterations": iteration, "delta": delta}
+
+        if (
+            converged is not None
+            and iteration > check_after
+            and iteration % check_every == 0
+            and converged(x, y)
+        ):
+            return (
+                x,
+                y,
+                {
+                    "iterations": iteration,
+                    "delta": delta,
+                    "stopped_on": "constraints",
+                },
+            )
 
     warnings.warn(
         f"{name}: fixed-point iteration hit max_iter={max_iter} with "

@@ -7,12 +7,15 @@ from .ecm import ECM as ECM
 from .rcm import RCM as RCM
 from .ubcm import UBCM as UBCM
 
+from .counts import BIHPCM as BIHPCM
 from .counts import BINBCM as BINBCM
 from .counts import BIPCM as BIPCM
+from .counts import DHPCM as DHPCM
 from .counts import DNBCM as DNBCM
 from .counts import DPCM as DPCM
 from .counts import DyadLayout as DyadLayout
 from .counts import DyadModel as DyadModel
+from .counts import UHPCM as UHPCM
 from .counts import UNBCM as UNBCM
 from .counts import UPCM as UPCM
 from .counts import aggregate_blocks as aggregate_blocks
