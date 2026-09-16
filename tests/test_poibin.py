@@ -1,8 +1,8 @@
-import pytest
 import numpy as np
+import pytest
 import scipy.stats
 
-from maxent_graph.poibin import dc_pb1, dc_pb2, dc_fft_pb
+from maxent_graph.poibin import dc_fft_pb, dc_pb1, dc_pb2
 
 
 def test_dc_pb():

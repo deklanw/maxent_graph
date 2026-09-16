@@ -17,7 +17,15 @@ from .layout import DyadLayout, dense
 
 
 def solve_product_form(
-    update_row, update_col, x0, y0, tied, tol=1e-12, max_iter=5000, name="model"
+    update_row,
+    update_col,
+    x0,
+    y0,
+    tied,
+    tol=1e-12,
+    max_iter=5000,
+    damping=1.0,
+    name="model",
 ):
     """
     Gauss-Seidel fixed-point iteration for a pair of effect vectors.
@@ -26,13 +34,21 @@ def solve_product_form(
     next column effects. When ``tied`` the two vectors are the same object and
     only ``update_row`` is used -- the layout's support is symmetric in that
     case, so a row update already sees every incidence.
+
+    ``damping`` below one mixes each update with the previous iterate. A tied
+    model updates every node against every other at once and can oscillate
+    without it; alternating updates generally do not need it.
     """
     x = np.array(x0, dtype=np.float64)
     y = x if tied else np.array(y0, dtype=np.float64)
 
     for iteration in range(1, max_iter + 1):
         x_new = np.asarray(update_row(x, y), dtype=np.float64)
+        if damping != 1.0:
+            x_new = damping * x_new + (1 - damping) * x
         y_new = x_new if tied else np.asarray(update_col(x_new, y), dtype=np.float64)
+        if damping != 1.0 and not tied:
+            y_new = damping * y_new + (1 - damping) * y
 
         delta = max(
             np.max(np.abs(x_new - x) / (1 + np.abs(x))),

@@ -14,6 +14,10 @@ from .adapters import from_biecm as from_biecm
 from .aggregate import aggregate_blocks as aggregate_blocks
 from .base import DyadModel as DyadModel
 from .layout import DyadLayout as DyadLayout
+from .negbinom import BINBCM as BINBCM
+from .negbinom import DNBCM as DNBCM
+from .negbinom import UNBCM as UNBCM
+from .negbinom import NegativeBinomialCM as NegativeBinomialCM
 from .poisson import BIPCM as BIPCM
 from .poisson import DPCM as DPCM
 from .poisson import UPCM as UPCM
