@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-from maxent_graph import BICM, DECM, BWCM, ECM, BIECM, RCM
+from maxent_graph import BICM, DBCM, DECM, BWCM, ECM, BIECM, RCM, UBCM
 from maxent_graph.util import nx_get_A, nx_get_B
 
 models = [
@@ -42,6 +42,10 @@ models = [
     ECM(nx_get_A("data/train_terrorists.graphml", weight_key="weight")),
     RCM(nx_get_A("data/dutch_school_net_1.graphml")),
     RCM(nx_get_A("data/macaques.graphml")),
+    UBCM(nx_get_A("data/kangaroo.graphml", weight_key="weight")),
+    UBCM(nx_get_A("data/train_terrorists.graphml", weight_key="weight")),
+    DBCM(nx_get_A("data/residence_hall.graphml", weight_key="weight")),
+    DBCM(nx_get_A("data/macaques.graphml", weight_key="weight")),
 ]
 
 

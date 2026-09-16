@@ -1,9 +1,11 @@
 from .bicm import BICM as BICM
+from .dbcm import DBCM as DBCM
 from .biecm import BIECM as BIECM
 from .bwcm import BWCM as BWCM
 from .decm import DECM as DECM
 from .ecm import ECM as ECM
 from .rcm import RCM as RCM
+from .ubcm import UBCM as UBCM
 
 from .counts import BINBCM as BINBCM
 from .counts import BIPCM as BIPCM
