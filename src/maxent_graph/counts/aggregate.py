@@ -9,8 +9,9 @@ and variance are just sums over its dyads, and for the Poisson family the
 cell total has an exact distribution of its own.
 
 The singleton partition, where every node is its own block, recovers the
-per-dyad answer, which makes it a regression test against the existing BiECM
-p-values rather than a separate code path.
+per-dyad answer exactly -- a one-dyad cell is answered by the dyad's own tail
+rather than convolved -- which makes it a regression test against the existing
+BiECM p-values rather than a separate code path.
 """
 
 import numpy as np
@@ -66,6 +67,15 @@ def _cell_tails(
     ``P(total >= observed)`` and p_lower is ``P(total <= observed)``.
     """
     observed = round(observed)
+
+    if method in ("auto", "exact", "fft") and len(dyads[0]) == 1:
+        # a cell holding one dyad is that dyad: no convolution, and no
+        # floating-point drift away from the model's own tail
+        return (
+            float(np.clip(model.sf(observed, dyads)[0], 0.0, 1.0)),
+            float(np.clip(model.cdf(observed, dyads)[0], 0.0, 1.0)),
+            "exact",
+        )
 
     if method in ("auto", "exact"):
         distribution = model.cell_distribution(dyads)

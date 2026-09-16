@@ -74,7 +74,9 @@ def test_fft_agrees_with_the_exact_poisson_cell(model):
     fft = aggregate_blocks(model, blocks, method="fft", **kwargs)
 
     assert set(exact.method) == {"exact"}
-    assert set(fft.method) == {"fft"}
+    # a one-dyad cell short-circuits to the dyad's own tail under either name
+    assert set(fft.method) <= {"fft", "exact"}
+    assert (fft.method == "exact").sum() == (fft.n_dyads == 1).sum()
     np.testing.assert_allclose(exact.p_upper, fft.p_upper, atol=1e-10)
     np.testing.assert_allclose(exact.p_lower, fft.p_lower, atol=1e-10)
 
@@ -240,10 +242,12 @@ def test_biecm_adapter_reproduces_the_edge_p_values(biecm_fit):
     reference = model.get_pval_matrix(solution.x, sp.csr_matrix(dense_W))
     nonzero = reference.nonzero()
 
+    # within one ulp: the remaining difference is the exponent's dtype, since
+    # ShiftedGeometric floors it to a float where get_pval_matrix does not
     np.testing.assert_allclose(
         table.sf(dense_W[nonzero], nonzero),
         np.asarray(reference[nonzero]).ravel(),
-        atol=1e-14,
+        rtol=1e-15,
     )
 
 
