@@ -47,17 +47,24 @@ class NegativeBinomialCM(DyadModel):
 
     Notes
     -----
-    The score equations are weighted by ``1 / (1 + mu / r)``, so the
-    maximum-likelihood fit does *not* reproduce the observed strengths except
-    in the Poisson limit -- it downweights the dyads whose means are large
-    relative to r. ``fit_info["score_norm"]`` is the convergence diagnostic
-    that matters for this family, not ``constraint_error()``.
+    ``fit`` has two readings of "configuration model", and defaults to the one
+    that earns the name.
 
-    Pass ``constrain_strengths=True`` to ``fit`` for the other reading of
-    "configuration model": hold the means at the family A solution, which
-    matches the strengths exactly by construction, and estimate only the
-    dispersion around them. That makes the Poisson model an exact special
-    case at every r rather than only in the limit.
+    ``constrain_strengths=True``, the default, holds the means at the family A
+    solution ``s_i s_j / W`` and estimates only the dispersion around them.
+    This is the Gamma-Poisson mixture over the Poisson configuration model:
+    the constraints are reproduced exactly, the Poisson model is an exact
+    special case at every r rather than only in the limit, and r is an
+    estimate of how far dyad intensities vary beyond Poisson noise.
+    ``fit_info`` carries the log-likelihood at the fitted r and at ``r ->
+    inf`` so that evidence can be read off directly.
+
+    ``constrain_strengths=False`` is instead the unrestricted maximum
+    likelihood fit, in which the means are free. Its score equations are
+    weighted by ``1 / (1 + mu / r)``, downweighting the dyads whose means are
+    large relative to r, so it does *not* reproduce the observed strengths
+    except in the Poisson limit. For that fit ``fit_info["score_norm"]`` is
+    the convergence diagnostic that matters, not ``constraint_error()``.
     """
 
     def __init__(self, W, layout, dispersion="global", r=None):
@@ -101,6 +108,20 @@ class NegativeBinomialCM(DyadModel):
         if self.dispersion == "row":
             return np.broadcast_to(r[:, None], self.layout.shape)
         return np.broadcast_to(r, self.layout.shape)
+
+    def _poisson_loglik_at(self, x, y):
+        """
+        Log-likelihood of the Poisson limit at the given effects, computed
+        directly rather than by pushing r to a large number, which loses
+        precision in the gamma terms.
+        """
+        canonical = self.layout.canonical
+        mu = np.where(canonical, self.layout.dyad_scale * np.outer(x, y), 1.0)
+        w = np.where(canonical, self.weights, 0.0)
+
+        with np.errstate(divide="ignore", invalid="ignore"):
+            terms = np.where(w > 0, w * np.log(mu), 0.0) - mu - gammaln(w + 1)
+        return float(np.where(canonical, terms, 0.0).sum())
 
     def _loglik_at(self, x, y, r_matrix):
         """
@@ -239,6 +260,20 @@ class NegativeBinomialCM(DyadModel):
         scale = np.sqrt(total)
         return self.row_strengths / scale, self.col_strengths / scale
 
+    def _poisson_effects(self, tol, max_iter):
+        """
+        The family A solution, which is both the constrained fit's means and
+        the ``r -> inf`` limit of the unconstrained one. None when the Poisson
+        model has no interior maximum for this network.
+        """
+        from .poisson import PoissonCM
+
+        try:
+            poisson = PoissonCM(self.W, self.layout).fit(tol=tol, max_iter=max_iter)
+        except RuntimeError:
+            return None
+        return poisson.row_effects, poisson.col_effects
+
     def _initial_r(self, x, y):
         """
         Method of moments on the Poisson residuals.
@@ -324,28 +359,33 @@ class NegativeBinomialCM(DyadModel):
         outer_tol=1e-10,
         r_bounds=(1e-3, 1e8),
         damping=None,
-        constrain_strengths=False,
+        constrain_strengths=True,
         standard_error=True,
     ):
         """
         Fits the effect vectors and the dispersion.
 
-        By default this is maximum likelihood, alternating between the effects
-        at fixed dispersion and the dispersion at fixed means. With
-        ``constrain_strengths`` the means are pinned to the family A solution,
-        which reproduces the observed strengths exactly, and only the
-        dispersion is estimated.
+        By default the means are pinned to the family A solution, which
+        reproduces the observed strengths exactly, and only the dispersion is
+        estimated around them. Pass ``constrain_strengths=False`` for the
+        unrestricted maximum likelihood fit, which alternates between the
+        effects at fixed dispersion and the dispersion at fixed means and does
+        not reproduce the strengths. See the class notes.
         """
         if damping is None:
             damping = 0.5 if self.layout.tied else 1.0
 
         x, y = self._initial_effects()
+        poisson_effects = self._poisson_effects(tol, max_iter)
 
         if constrain_strengths:
-            from .poisson import PoissonCM
-
-            poisson = PoissonCM(self.W, self.layout).fit(tol=tol, max_iter=max_iter)
-            x, y = poisson.row_effects, poisson.col_effects
+            if poisson_effects is None:
+                raise RuntimeError(
+                    "constrain_strengths=True needs the Poisson configuration "
+                    "model, which has no interior maximum for this network; "
+                    "pass constrain_strengths=False"
+                )
+            x, y = poisson_effects
             r = (
                 self._as_dispersion(self.fixed_r)
                 if self.fixed_r is not None
@@ -394,6 +434,7 @@ class NegativeBinomialCM(DyadModel):
             "dispersion": self.dispersion,
             "constrain_strengths": self.constrained,
         }
+        self.fit_info.update(self._overdispersion_evidence(poisson_effects))
         if "fallback" in info:
             self.fit_info["fallback"] = info["fallback"]
 
@@ -431,6 +472,32 @@ class NegativeBinomialCM(DyadModel):
                 )
         return self
 
+    def _overdispersion_evidence(self, poisson_effects):
+        """
+        The log-likelihood at the fitted dispersion and at ``r -> inf``, plus
+        the likelihood ratio between them.
+
+        The Poisson model is the boundary of the negative binomial family, so
+        the null distribution of the ratio is an even mixture of a point mass
+        at zero and a chi-square on one degree of freedom, not a plain
+        chi-square -- which is where the halved tail probability comes from.
+        """
+        value = self.loglik()
+        evidence = {"loglik": value}
+
+        if poisson_effects is None:
+            evidence["loglik_poisson"] = np.nan
+            return evidence
+
+        limit = self._poisson_loglik_at(*poisson_effects)
+        ratio = 2 * (value - limit)
+        evidence["loglik_poisson"] = limit
+        evidence["overdispersion_lr"] = ratio
+        evidence["overdispersion_p"] = (
+            0.5 * scipy.stats.chi2.sf(ratio, 1) if ratio > 0 else 1.0
+        )
+        return evidence
+
     # ------------------------------------------------------------------
     # distribution
     # ------------------------------------------------------------------
@@ -443,16 +510,28 @@ class NegativeBinomialCM(DyadModel):
 
     def profile_loglik(self, r_values, tol=1e-12, max_iter=5000, damping=None):
         """
-        The profile log-likelihood at each of ``r_values``, re-fitting the
-        effects at each one. Handy for checking unimodality.
+        The profile log-likelihood at each of ``r_values``. Handy for checking
+        unimodality.
+
+        Follows however the model was fitted: with the means constrained they
+        stay at the family A solution, and otherwise the effects are re-fitted
+        at each r so the nuisance parameters are profiled out.
         """
+        self._require_fit()
         if self.dispersion != "global":
             raise ValueError("the profile is only one dimensional for a global r")
         if damping is None:
             damping = 0.5 if self.layout.tied else 1.0
 
-        x0, y0 = self._initial_effects()
         out = np.empty(len(r_values))
+        if self.constrained:
+            for k, r in enumerate(r_values):
+                out[k] = self._loglik_at(
+                    self.row_effects, self.col_effects, self._r_matrix(r)
+                )
+            return out
+
+        x0, y0 = self._initial_effects()
         for k, r in enumerate(r_values):
             r_matrix = self._r_matrix(r)
             x, y, _ = self._solve_effects(r_matrix, x0, y0, tol, max_iter, damping)

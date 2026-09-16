@@ -35,11 +35,24 @@ def test_variance_follows_the_dispersion(model):
 
 
 @pytest.mark.parametrize("model", models())
-def test_score_equations_are_solved(model):
+def test_default_fit_reproduces_the_strengths(model):
     model.fit()
+    assert model.fit_info["constrain_strengths"] is True
+    np.testing.assert_allclose(
+        model.expected_row_strengths(), model.row_strengths, atol=1e-9
+    )
+    np.testing.assert_allclose(
+        model.expected_col_strengths(), model.col_strengths, atol=1e-9
+    )
+
+
+@pytest.mark.parametrize("model", models())
+def test_unconstrained_fit_solves_the_score_equations(model):
+    model.fit(constrain_strengths=False)
     assert model.fit_info["score_norm"] < 1e-6
-    # and the fit beats the Poisson one it started from
     assert model.r > 0
+    # the weighted score equations are not the strength constraints
+    assert model.constraint_error() > 1e-9
 
 
 @pytest.mark.parametrize("constrained", [False, True])
@@ -118,11 +131,12 @@ def test_r_of_one_against_the_bwcm():
     assert bwcm_var.sum() > 0
 
 
+@pytest.mark.parametrize("constrained", [True, False])
 @pytest.mark.parametrize(
-    "model", [BINBCM(random_bipartite()), BINBCM(kato()), UNBCM(kangaroo())]
+    "W, cls", [(random_bipartite(), BINBCM), (kato(), BINBCM), (kangaroo(), UNBCM)]
 )
-def test_profile_likelihood_is_unimodal(model):
-    model.fit()
+def test_profile_likelihood_is_unimodal(W, cls, constrained):
+    model = cls(W).fit(constrain_strengths=constrained)
     grid = np.geomspace(model.r / 50, model.r * 50, 40)
     profile = model.profile_loglik(grid)
 
@@ -134,7 +148,7 @@ def test_profile_likelihood_is_unimodal(model):
 
 @pytest.mark.parametrize("model", models())
 def test_constrained_fit_reproduces_the_strengths(model):
-    model.fit(constrain_strengths=True)
+    model.fit()
     np.testing.assert_allclose(
         model.expected_row_strengths(), model.row_strengths, atol=1e-9
     )
@@ -146,7 +160,8 @@ def test_constrained_fit_reproduces_the_strengths(model):
 
 def test_maximum_likelihood_beats_the_constrained_fit():
     B = kato()
-    assert BINBCM(B).fit().loglik() > BINBCM(B).fit(constrain_strengths=True).loglik()
+    free = BINBCM(B).fit(constrain_strengths=False).loglik()
+    assert free > BINBCM(B).fit().loglik()
 
 
 def test_standard_error_is_reported():
@@ -158,27 +173,57 @@ def test_standard_error_is_reported():
 
 
 def test_standard_error_covers_a_simulated_truth():
-    truth = BINBCM(random_bipartite(25, 30, seed=3), r=4.0).fit(
-        constrain_strengths=True
-    )
+    truth = BINBCM(random_bipartite(25, 30, seed=3), r=4.0).fit()
     simulated = truth.sample(1, rng=np.random.default_rng(7))[0]
 
-    refit = BINBCM(simulated).fit(constrain_strengths=True)
+    refit = BINBCM(simulated).fit()
     assert abs(refit.r - 4.0) < 4 * refit.r_std_error
 
 
-def test_row_dispersion():
+@pytest.mark.parametrize("constrained", [True, False])
+def test_overdispersion_evidence_is_reported(constrained):
+    B = kato()
+    model = BINBCM(B).fit(constrain_strengths=constrained)
+    info = model.fit_info
+
+    assert info["loglik"] == pytest.approx(model.loglik())
+    # the r -> inf limit is the Poisson configuration model on the same data
+    assert info["loglik_poisson"] == pytest.approx(BIPCM(B).fit().loglik())
+    assert info["overdispersion_lr"] == pytest.approx(
+        2 * (info["loglik"] - info["loglik_poisson"])
+    )
+    assert info["overdispersion_lr"] > 0
+    # the boundary correction halves the chi-square tail
+    assert info["overdispersion_p"] == pytest.approx(
+        0.5 * scipy.stats.chi2.sf(info["overdispersion_lr"], 1)
+    )
+
+
+def test_a_poisson_network_shows_no_overdispersion():
+    simulated = (
+        BIPCM(random_bipartite(25, 30, seed=11))
+        .fit()
+        .sample(1, rng=np.random.default_rng(3))[0]
+    )
+    info = BINBCM(simulated).fit().fit_info
+    assert info["overdispersion_p"] > 0.05
+
+
+@pytest.mark.parametrize("constrained", [True, False])
+def test_row_dispersion(constrained):
     B = random_bipartite()
-    model = BINBCM(B, dispersion="row").fit()
+    model = BINBCM(B, dispersion="row").fit(constrain_strengths=constrained)
 
     assert model.r.shape == (B.shape[0],)
     mean = model.mean()
     np.testing.assert_allclose(
         model.var(), mean + mean**2 / model.r[:, None], atol=1e-10
     )
-    assert model.fit_info["score_norm"] < 1e-6
+    if not constrained:
+        assert model.fit_info["score_norm"] < 1e-6
     # a free r per row can only fit better than one shared r
-    assert model.loglik() >= BINBCM(B).fit().loglik() - 1e-8
+    shared = BINBCM(B).fit(constrain_strengths=constrained).loglik()
+    assert model.loglik() >= shared - 1e-8
 
 
 def test_row_dispersion_is_refused_when_the_sides_are_tied():
