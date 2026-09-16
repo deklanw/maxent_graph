@@ -120,6 +120,14 @@ class HurdlePoissonCM(DyadModel):
     expected strength, which sums over absent dyads too, is not the observed
     strength. ``expected_positive_row_strengths`` is the quantity the fit
     actually constrains.
+
+    The positive half can also sit on a boundary the product form cannot
+    reach, even with the shifted part: a set of rows whose neighbours' excess
+    weight is owed almost entirely to that set drives some rates towards zero
+    or infinity. The fit then stops on the constraint residual rather than on
+    the parameters, so ``fit_info["positive_strength_error"]`` is the number
+    to check -- small relative to the strengths means the fitted distribution
+    has settled, whatever the rates are still doing.
     """
 
     def __init__(self, W, layout, kind="hurdle", positive=None):

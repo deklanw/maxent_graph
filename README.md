@@ -77,6 +77,10 @@ Two more things worth knowing before reading the numbers:
 - The hurdle models fit their positive half on the observed edges only, as the
   factorised likelihood implies, so their *joint* expected strength -- which
   sums over absent dyads too -- is below the observed one.
+- On sparse networks the hurdle models' positive half can sit near a boundary
+  the product form cannot reach, set by which dyads are present rather than by
+  unit weights. The fit then stops on the constraint residual, so check
+  `fit_info["positive_strength_error"]` against the strengths.
 - The binary configuration models ignore self-loops, so the hurdle models do
   too. The Poisson and negative binomial models take `self_loops=True`.
 
