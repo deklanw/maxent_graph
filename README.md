@@ -43,7 +43,11 @@ totals, the variance, an enrichment ratio, a z-score, both tail probabilities
 and the per-side coverage. Cell tails are exact where the family has a closed
 form for them, otherwise the dyad pmfs are convolved, falling back to a normal
 approximation once a cell is too large -- which for the overdispersed families
-is noticeably worse, so prefer the convolution where you can afford it. It also
+is noticeably worse, so prefer the convolution where you can afford it. The
+convolution is exponentially tilted onto the observed total, so both tails keep
+full relative accuracy however small they are, and the variance comes from the
+cell's own distribution where the family has one, which is what makes it right
+under exact stub matching, whose dyads are dependent. It also
 works on a solved BiCM or BiECM through `from_bicm` / `from_biecm`, and with a
 singleton partition it reproduces the BiECM's own edge p-values.
 
@@ -69,20 +73,22 @@ The hurdle models' positive part is a shifted Poisson -- `w - 1 ~ Poisson(lam)`
 -- matching the BiECM's shifted geometric. `positive="ztp"` gives a
 zero-truncated Poisson instead, which is what `kind="zip"` implies; the shifted
 form is the default because its conditional mean `1 + lam` is linear in the
-rate, which makes the fit a plain Poisson fit on `w - 1` with targets
-`s_i - k_i`.
+rate, which makes the fit a weighted Poisson fit on `w - 1`.
 
-Two more things worth knowing before reading the numbers:
+Like every other model here, the hurdle models reproduce their constraints over
+the whole model by default: expected degrees, and expected strengths summed over
+every dyad, `sum_j p_ij E[w_ij | present] = s_i`. That gives every dyad a rate,
+so an absent dyad can carry a weight of two or more. `strengths="conditional"`
+matches strengths over the observed edges only, which is what maximising the
+factorised likelihood gives -- but the model's own expected strengths then fall
+short (to 65% of the total weight on kato), and every absent dyad has rate zero.
+`fit_info["strength_error"]` reports the error in whichever constraint was
+imposed; under the conditional fit on a sparse network it can stop on the
+constraint residual near a boundary set by which dyads are present, so check it
+against the strengths.
 
-- The hurdle models fit their positive half on the observed edges only, as the
-  factorised likelihood implies, so their *joint* expected strength -- which
-  sums over absent dyads too -- is below the observed one.
-- On sparse networks the hurdle models' positive half can sit near a boundary
-  the product form cannot reach, set by which dyads are present rather than by
-  unit weights. The fit then stops on the constraint residual, so check
-  `fit_info["positive_strength_error"]` against the strengths.
-- The binary configuration models ignore self-loops, so the hurdle models do
-  too. The Poisson and negative binomial models take `self_loops=True`.
+The binary configuration models ignore self-loops, so the hurdle models do too.
+The Poisson and negative binomial models take `self_loops=True`.
 
 The implementation of the pmf for the Poisson-Binomial distribution (used for assessing the statistical significance of the presence of V-motifs in the BiCM) is based on [4]
 
