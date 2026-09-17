@@ -481,6 +481,10 @@ class NegativeBinomialCM(DyadModel):
         the null distribution of the ratio is an even mixture of a point mass
         at zero and a chi-square on one degree of freedom, not a plain
         chi-square -- which is where the halved tail probability comes from.
+
+        That reference is for one dispersion. With ``dispersion="row"`` the
+        ratio is still reported but the p-value is NaN: it would need its own
+        calibration, a parametric bootstrap for instance.
         """
         value = self.loglik()
         evidence = {"loglik": value}
@@ -493,6 +497,15 @@ class NegativeBinomialCM(DyadModel):
         ratio = 2 * (value - limit)
         evidence["loglik_poisson"] = limit
         evidence["overdispersion_lr"] = ratio
+
+        if self.dispersion == "row":
+            # the Poisson limit puts every row's r on its boundary at once, so
+            # the reference is a mixture over how many of them sit there, not
+            # the one-parameter mixture below -- and with the means free that
+            # mixture's weights are not known. No p-value rather than a wrong one.
+            evidence["overdispersion_p"] = np.nan
+            return evidence
+
         evidence["overdispersion_p"] = (
             0.5 * scipy.stats.chi2.sf(ratio, 1) if ratio > 0 else 1.0
         )

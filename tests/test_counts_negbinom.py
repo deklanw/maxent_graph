@@ -199,6 +199,27 @@ def test_overdispersion_evidence_is_reported(constrained):
     )
 
 
+@pytest.mark.parametrize("constrained", [True, False])
+def test_row_dispersion_has_no_single_parameter_p_value(constrained):
+    """
+    The halved chi-square on one degree of freedom is the reference for one
+    dispersion; with one per row it is miscalibrated, so it is not reported.
+    """
+    B = kato()
+    model = BINBCM(B, dispersion="row").fit(constrain_strengths=constrained)
+    info = model.fit_info
+
+    assert np.isnan(info["overdispersion_p"])
+    assert info["overdispersion_lr"] == pytest.approx(
+        2 * (info["loglik"] - info["loglik_poisson"])
+    )
+    assert info["overdispersion_lr"] > 0
+    # the global fit keeps its p-value
+    assert np.isfinite(
+        BINBCM(B).fit(constrain_strengths=constrained).fit_info["overdispersion_p"]
+    )
+
+
 def test_a_poisson_network_shows_no_overdispersion():
     simulated = (
         BIPCM(random_bipartite(25, 30, seed=11))

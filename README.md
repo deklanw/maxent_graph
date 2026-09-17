@@ -65,7 +65,9 @@ model.fit_info["overdispersion_lr"], model.fit_info["overdispersion_p"]
 
 The Poisson model is the boundary of the family, so that p-value is against an
 even mixture of a point mass at zero and a chi-square on one degree of freedom,
-not a plain chi-square. Pass `fit(constrain_strengths=False)` for the
+not a plain chi-square. That reference is for a single `r`, so with
+`dispersion="row"` the ratio is reported but `overdispersion_p` is NaN. Pass
+`fit(constrain_strengths=False)` for the
 unrestricted maximum likelihood fit instead, whose weighted score equations
 leave the means free and so do *not* reproduce the strengths.
 
