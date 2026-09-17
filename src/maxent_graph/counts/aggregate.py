@@ -60,11 +60,21 @@ def _cell_pmf(model, dyads, cap):
 
 
 def _cell_tails(
-    model, dyads, observed, expected, variance, method, sigma, max_fft_dyads
+    model,
+    dyads,
+    observed,
+    expected,
+    variance,
+    method,
+    sigma,
+    max_fft_dyads,
+    distribution=None,
 ):
     """
     Returns ``(p_upper, p_lower, method_used)`` for one cell, where p_upper is
     ``P(total >= observed)`` and p_lower is ``P(total <= observed)``.
+
+    ``distribution`` is the family's exact cell distribution when it has one.
     """
     observed = round(observed)
 
@@ -78,7 +88,6 @@ def _cell_tails(
         )
 
     if method in ("auto", "exact"):
-        distribution = model.cell_distribution(dyads)
         if distribution is not None:
             return (
                 float(np.clip(distribution.sf(observed - 1), 0.0, 1.0)),
@@ -103,9 +112,14 @@ def _cell_tails(
             "fft",
         )
 
+    if variance <= 0:
+        # a total that cannot vary is a point mass at its mean
+        return (
+            1.0 if observed <= expected else 0.0,
+            1.0 if observed >= expected else 0.0,
+            "normal",
+        )
     sd = np.sqrt(variance)
-    if sd == 0:
-        return (1.0 if observed <= expected else 0.0, 1.0, "normal")
     # continuity correction, since the cell total is integer valued
     upper = scipy.stats.norm.sf((observed - 0.5 - expected) / sd)
     lower = scipy.stats.norm.cdf((observed + 0.5 - expected) / sd)
@@ -155,7 +169,8 @@ def aggregate_blocks(
     -------
     pandas.DataFrame
         One row per non-empty cell, with the observed and expected totals,
-        the variance, the enrichment ratio, a z-score, upper and lower tail
+        the variance of the cell total -- from the family's own cell
+        distribution where it has one, so dependent dyads are handled -- the enrichment ratio, a z-score, upper and lower tail
         probabilities, and the per-side coverage: the fraction of nodes in the
         row block with at least one edge into the column block, and vice
         versa.
@@ -217,8 +232,16 @@ def aggregate_blocks(
         dyads = (rows[cell], cols[cell])
 
         total = float(observed[cell].sum())
-        expected = float(mean[cell].sum())
-        cell_variance = float(variance[cell].sum())
+        distribution = model.cell_distribution(dyads)
+        if distribution is not None:
+            # the family knows the cell total's own law, which matters when
+            # its dyads are dependent: under exact stub matching the dyad
+            # variances do not add, and a fixed grand total has variance zero
+            expected = float(distribution.mean())
+            cell_variance = float(distribution.var())
+        else:
+            expected = float(mean[cell].sum())
+            cell_variance = float(variance[cell].sum())
 
         p_upper, p_lower, used = _cell_tails(
             model,
@@ -229,6 +252,7 @@ def aggregate_blocks(
             method,
             sigma,
             max_fft_dyads,
+            distribution=distribution,
         )
 
         present = cell[observed[cell] > 0]

@@ -348,3 +348,57 @@ def test_bicm_adapter_matches_its_own_fit():
     assert cells.observed.sum() == pytest.approx(dense_B.sum())
     # every cell probability is a sum of Bernoullis, so fft is exact
     assert set(cells.method) == {"fft"}
+
+
+# --------------------------------------------------------------------------
+# regressions
+# --------------------------------------------------------------------------
+
+
+def test_exact_margins_fixed_grand_total_has_zero_variance():
+    """
+    Under stub matching the dyads are dependent, so their variances do not
+    add. Summing them reported a variance for a grand total that is fixed.
+    """
+    B = random_bipartite()
+    model = BIPCM(B, exact=True).fit()
+    cell = aggregate_blocks(
+        model, np.zeros(B.shape[0], int), np.zeros(B.shape[1], int)
+    ).iloc[0]
+
+    assert cell.variance == 0.0
+    assert cell.observed == cell.expected == model.total_weight
+    assert cell.p_upper == pytest.approx(1.0)
+    assert cell.p_lower == pytest.approx(1.0)
+
+
+def test_exact_margin_cell_variance_matches_simulation():
+    B = random_bipartite()
+    model = BIPCM(B, exact=True).fit()
+    table = aggregate_blocks(model, ROW_BLOCKS, COL_BLOCKS)
+
+    draws = model.sample(6000, rng=np.random.default_rng(4))
+    for cell in table.itertuples():
+        rows = np.flatnonzero(ROW_BLOCKS == cell.row_block)
+        cols = np.flatnonzero(COL_BLOCKS == cell.col_block)
+        totals = draws[:, rows][:, :, cols].sum(axis=(1, 2))
+        assert totals.mean() == pytest.approx(cell.expected, rel=0.02)
+        assert totals.var() == pytest.approx(cell.variance, rel=0.1)
+
+    # and it is smaller than the independent-dyad sum would claim
+    independent = model.var()
+    rows = np.flatnonzero(ROW_BLOCKS == 0)
+    cols = np.flatnonzero(COL_BLOCKS == "a")
+    cell = table.set_index(["row_block", "col_block"]).loc[(0, "a")]
+    assert cell.variance < independent[np.ix_(rows, cols)].sum()
+
+
+def test_normal_approximation_of_a_fixed_total():
+    from maxent_graph.counts.aggregate import _cell_tails
+
+    model = BIPCM(random_bipartite()).fit()
+    dyads = (np.array([0, 0]), np.array([0, 1]))
+    below = _cell_tails(model, dyads, 3, 5.0, 0.0, "normal", 10.0, 512)
+    above = _cell_tails(model, dyads, 7, 5.0, 0.0, "normal", 10.0, 512)
+    assert below[:2] == (1.0, 0.0)
+    assert above[:2] == (0.0, 1.0)
