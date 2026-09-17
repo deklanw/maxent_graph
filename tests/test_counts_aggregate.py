@@ -467,3 +467,40 @@ def test_normal_approximation_of_a_fixed_total():
     above = _cell_tails(model, dyads, 7, 5.0, 0.0, "normal", 10.0, 512)
     assert below[:2] == (1.0, 0.0)
     assert above[:2] == (0.0, 1.0)
+
+
+@pytest.mark.parametrize("method", ["auto", "exact", "fft", "normal"])
+def test_exact_margins_fixed_grand_total_under_every_method(method):
+    """
+    Forcing a convolution used to treat stub matching's dependent dyads as
+    independent: the fixed grand total came back with both tails near 0.5.
+    """
+    B = random_bipartite()
+    model = BIPCM(B, exact=True).fit()
+    cell = aggregate_blocks(
+        model, np.zeros(B.shape[0], int), np.zeros(B.shape[1], int), method=method
+    ).iloc[0]
+    assert cell.p_upper == pytest.approx(1.0)
+    assert cell.p_lower == pytest.approx(1.0)
+
+
+def test_forced_convolution_of_dependent_dyads_uses_the_exact_law():
+    model = BIPCM(random_bipartite(), exact=True).fit()
+    exact = aggregate_blocks(model, ROW_BLOCKS, COL_BLOCKS, method="exact")
+    forced = aggregate_blocks(model, ROW_BLOCKS, COL_BLOCKS, method="fft")
+    assert set(forced.method) == {"exact"}
+    np.testing.assert_array_equal(forced.p_upper, exact.p_upper)
+    np.testing.assert_array_equal(forced.p_lower, exact.p_lower)
+
+
+def test_dependent_dyads_without_a_cell_law_are_refused():
+    from maxent_graph.counts.aggregate import _cell_tails
+
+    model = BIPCM(random_bipartite(), exact=True).fit()
+    dyads = (np.array([0, 1]), np.array([0, 1]))  # not a block rectangle
+    assert model.cell_distribution(dyads) is None
+    for method in ("auto", "fft", "normal"):
+        with pytest.raises(ValueError, match="dependent dyads"):
+            _cell_tails(model, dyads, 3, 3.0, 1.0, method, 10.0, 512)
+    assert model.independent_dyads is False
+    assert BIPCM(random_bipartite()).fit().independent_dyads is True

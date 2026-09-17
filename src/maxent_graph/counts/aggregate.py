@@ -181,6 +181,17 @@ def _cell_tails(
             "exact",
         )
 
+    if not getattr(model, "independent_dyads", True):
+        # convolving pmfs or adding variances assumes independent dyads, so
+        # a dependent family can only be answered by its own cell law
+        if distribution is None:
+            raise ValueError(
+                f"{type(model).__name__} has dependent dyads and no exact "
+                "distribution for this cell, so its tail cannot be computed"
+            )
+        if method == "fft":
+            method = "exact"
+
     if method in ("auto", "exact"):
         if distribution is not None:
             return (
@@ -249,7 +260,10 @@ def aggregate_blocks(
         however small. ``"normal"`` uses a normal approximation with a continuity
         correction; it drifts badly for the overdispersed families, where a
         cell total can be far from normal, so prefer the convolution when the
-        cell is small enough to afford it. ``"auto"`` takes the exact
+        cell is small enough to afford it. Models whose dyads are dependent
+        -- ``exact=True`` stub matching -- are always answered from the exact
+        cell distribution, so ``"fft"`` gives the same answer as ``"exact"``
+        for them and is reported as such. ``"auto"`` takes the exact
         distribution when it exists, else convolves cells of at most
         ``max_fft_dyads`` dyads, else approximates.
     sigma : float
@@ -330,6 +344,11 @@ def aggregate_blocks(
             # variances do not add, and a fixed grand total has variance zero
             expected = float(distribution.mean())
             cell_variance = float(distribution.var())
+        elif not getattr(model, "independent_dyads", True):
+            raise ValueError(
+                f"{type(model).__name__} has dependent dyads and no exact "
+                "distribution for this cell, so its variance cannot be computed"
+            )
         else:
             expected = float(mean[cell].sum())
             cell_variance = float(variance[cell].sum())

@@ -56,6 +56,8 @@ class PoissonCM(DyadModel):
                     )
 
         self.exact = bool(exact)
+        # stub matching fixes the margins, which couples every dyad
+        self.independent_dyads = not self.exact
         self.row_effects = None
         self.col_effects = None
 

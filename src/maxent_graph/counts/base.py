@@ -125,6 +125,11 @@ class DyadModel(ABC):
     elsewhere.
     """
 
+    #: Whether the dyad weights are independent. Every model here is except
+    #: exact stub matching, where the fixed margins couple them; anything that
+    #: convolves dyad pmfs or adds dyad variances has to check this.
+    independent_dyads = True
+
     def __init__(self, W, layout):
         if not isinstance(layout, DyadLayout):
             raise TypeError("layout must be a DyadLayout")
