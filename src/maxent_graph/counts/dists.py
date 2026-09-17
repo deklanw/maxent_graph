@@ -42,6 +42,11 @@ class ZeroTruncatedPoisson:
         out = scipy.stats.poisson.pmf(w, self.lam) / self.denominator
         return np.where(w >= 1, out, 0.0)
 
+    def logpmf(self, w):
+        w = np.asarray(w)
+        out = scipy.stats.poisson.logpmf(w, self.lam) - np.log(self.denominator)
+        return np.where(w >= 1, out, -np.inf)
+
     def cdf(self, k):
         k = np.floor(np.asarray(k))
         out = (scipy.stats.poisson.cdf(k, self.lam) - np.exp(-self.lam)) / (
@@ -92,6 +97,10 @@ class ShiftedPoisson:
         w = np.asarray(w)
         return np.where(w >= 1, scipy.stats.poisson.pmf(w - 1, self.lam), 0.0)
 
+    def logpmf(self, w):
+        w = np.asarray(w)
+        return np.where(w >= 1, scipy.stats.poisson.logpmf(w - 1, self.lam), -np.inf)
+
     def cdf(self, k):
         k = np.floor(np.asarray(k))
         return np.where(k < 1, 0.0, scipy.stats.poisson.cdf(k - 1, self.lam))
@@ -129,12 +138,25 @@ class ShiftedGeometric:
         out = (1 - self.y) * self.y ** np.maximum(w - 1, 0)
         return np.where(w >= 1, out, 0.0)
 
+    def logpmf(self, w):
+        w = np.asarray(w)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            # the first term alone at w == 1, so y == 0 does not give 0 * -inf
+            out = np.log1p(-self.y) + np.where(
+                w > 1, np.maximum(w - 1, 0) * np.log(self.y), 0.0
+            )
+        return np.where(w >= 1, out, -np.inf)
+
     def sf(self, k):
         k = np.floor(np.asarray(k))
         return np.where(k < 0, 1.0, self.y ** np.maximum(k, 0))
 
     def cdf(self, k):
-        return 1.0 - self.sf(k)
+        k = np.floor(np.asarray(k))
+        # 1 - y**k, without the cancellation when y**k is close to one
+        with np.errstate(divide="ignore", invalid="ignore"):
+            out = -np.expm1(np.maximum(k, 0) * np.log(self.y))
+        return np.where(k < 1, 0.0, np.where(self.y > 0, out, 1.0))
 
     def rvs(self, size=None, random_state=None):
         return scipy.stats.geom.rvs(
@@ -167,12 +189,22 @@ class Hurdle:
         w = np.asarray(w)
         return np.where(w == 0, 1 - self.p, self.p * self.positive.pmf(w))
 
+    def logpmf(self, w):
+        w = np.asarray(w)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            positive = np.log(self.p) + self.positive.logpmf(w)
+            return np.where(
+                w == 0, np.log1p(-self.p), np.where(w > 0, positive, -np.inf)
+            )
+
     def sf(self, k):
         k = np.floor(np.asarray(k))
         return np.where(k < 0, 1.0, self.p * self.positive.sf(k))
 
     def cdf(self, k):
-        return 1.0 - self.sf(k)
+        k = np.floor(np.asarray(k))
+        # summed rather than 1 - sf, which cancels when the lower tail is tiny
+        return np.where(k < 0, 0.0, (1 - self.p) + self.p * self.positive.cdf(k))
 
     def rvs(self, size=None, random_state=None):
         rng = np.random.default_rng(random_state)

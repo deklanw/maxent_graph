@@ -2,7 +2,12 @@ import numpy as np
 import pytest
 import scipy.stats
 
-from maxent_graph.counts.dists import Hurdle, ShiftedGeometric, ZeroTruncatedPoisson
+from maxent_graph.counts.dists import (
+    Hurdle,
+    ShiftedGeometric,
+    ShiftedPoisson,
+    ZeroTruncatedPoisson,
+)
 
 GRID = np.arange(0, 600)
 
@@ -91,3 +96,52 @@ def test_zero_truncated_poisson_rvs_stays_in_support(lam):
     assert draws.mean() == pytest.approx(
         dist.mean(), abs=5 * np.sqrt(dist.var() / 20000) + 1e-9
     )
+
+
+@pytest.mark.parametrize(
+    "dist",
+    [
+        ZeroTruncatedPoisson(np.array([1e-14, 0.5, 40.0])),
+        ShiftedPoisson(np.array([0.0, 0.5, 40.0])),
+        ShiftedGeometric(np.array([0.0, 0.3, 0.99])),
+        Hurdle(np.array([0.0, 0.4, 1.0]), ShiftedPoisson(np.array([2.0, 0.0, 40.0]))),
+        Hurdle(
+            np.array([0.2, 0.4, 0.9]), ZeroTruncatedPoisson(np.array([2.0, 1e-9, 40.0]))
+        ),
+    ],
+)
+def test_logpmf_matches_log_pmf_and_survives_underflow(dist):
+    grid = np.arange(0, 3000)[:, None]
+    with np.errstate(divide="ignore"):
+        from_pmf = np.log(dist.pmf(grid))
+    logpmf = dist.logpmf(grid)
+
+    # comparing only where the pmf is comfortably representable: near
+    # underflow the pmf is subnormal and its log is the inaccurate one
+    representable = dist.pmf(grid) > 1e-280
+    np.testing.assert_allclose(
+        logpmf[representable], from_pmf[representable], rtol=1e-9, atol=1e-12
+    )
+    representable = np.isfinite(from_pmf)
+    # where the pmf underflows but the outcome is possible, the log stays finite
+    assert not np.any(np.isnan(logpmf))
+    assert np.isfinite(logpmf[~representable & (logpmf > -np.inf)]).all()
+
+
+def test_logpmf_is_finite_far_in_a_poisson_tail():
+    dist = ShiftedPoisson(3.0)
+    assert dist.pmf(2000) == 0.0
+    assert np.isfinite(dist.logpmf(2000))
+    assert dist.logpmf(2000) == pytest.approx(scipy.stats.poisson.logpmf(1999, 3.0))
+
+
+def test_hurdle_lower_tail_has_no_cancellation():
+    """
+    A hurdle cdf computed as 1 - sf rounds a lower tail near 1e-16 to the
+    nearest ulp of one, which here was 2.2e-16 against a true 1.7e-16.
+    """
+    dist = Hurdle(1.0, ShiftedPoisson(40.0))
+    tiny = dist.cdf(2)
+    reference = scipy.stats.poisson.cdf(1, 40.0)
+    assert 0 < tiny < 1e-15
+    np.testing.assert_allclose(tiny, reference, rtol=1e-9, atol=0)

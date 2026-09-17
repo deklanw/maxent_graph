@@ -179,6 +179,33 @@ def test_pvalues_evaluate_sf_at_the_observed_weights(model):
     assert np.all((full[model.layout.support] >= 0) & (full[model.layout.support] <= 1))
 
 
+def test_loglik_survives_pmf_underflow():
+    """
+    A dyad whose pmf underflows to zero used to send loglik to -inf, because
+    it took the log of the pmf rather than summing log-pmfs.
+    """
+    B = np.diag([2000.0, 2000.0])
+    model = BIPCM(B).fit()
+    assert scipy.stats.poisson.pmf(0, model.mean()[0, 1]) == 0.0
+
+    direct = scipy.stats.poisson.logpmf(B, model.mean()).sum()
+    assert np.isfinite(model.loglik())
+    assert model.loglik() == pytest.approx(direct)
+    assert np.isfinite(BIPCM(B, exact=True).fit().loglik())
+
+
+@pytest.mark.parametrize("model", all_models())
+def test_logpmf_agrees_with_pmf(model):
+    model.fit()
+    dyads = model.layout.canonical_pairs()
+    for w in (0, 1, 4):
+        pmf = model.pmf(w, dyads)
+        keep = pmf > 1e-300
+        np.testing.assert_allclose(
+            np.exp(model.logpmf(w, dyads)[keep]), pmf[keep], rtol=1e-10
+        )
+
+
 def test_unfitted_model_refuses_to_answer():
     model = BIPCM(random_bipartite())
     with pytest.raises(RuntimeError, match="not fitted"):

@@ -262,6 +262,18 @@ def test_samples_are_overdispersed_and_respect_the_layout(model):
     assert np.all(np.abs(empirical - expected) < 5 * np.sqrt(variance / 3000) + 1e-9)
 
 
+def test_loglik_survives_pmf_underflow():
+    B = random_bipartite()
+    # a zero where a heavy row meets a heavy column: a huge mean, and with a
+    # large r the pmf of zero underflows
+    B[0, 0] = 0.0
+    B[0, 1] = B[1, 0] = 1e5
+    model = BINBCM(B, r=1000.0).fit()
+    rows, cols = model.layout.canonical_pairs()
+    assert np.any(model.pmf(model.weights[rows, cols], (rows, cols)) == 0)
+    assert np.isfinite(model.loglik())
+
+
 def test_validation():
     with pytest.raises(ValueError, match="dispersion"):
         BINBCM(random_bipartite(), dispersion="column")

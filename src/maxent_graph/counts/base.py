@@ -269,6 +269,15 @@ class DyadModel(ABC):
             np.asarray(self._dist(idx).pmf(w), dtype=np.float64), idx
         )
 
+    def logpmf(self, w, dyads=None):
+        """
+        log P(X == w), accurate where the pmf itself underflows.
+        """
+        idx = self._index(dyads)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            values = np.asarray(self._dist(idx).logpmf(w), dtype=np.float64)
+        return self._mask_prob(values, idx)
+
     def cdf(self, w, dyads=None):
         """
         P(X <= w).
@@ -316,7 +325,9 @@ class DyadModel(ABC):
         """
         pairs = self.layout.canonical_pairs()
         observed = self.weights[pairs]
-        return float(np.sum(np.log(self._dist(pairs).pmf(observed))))
+        # logpmf, not log(pmf): a single dyad whose pmf underflows to zero
+        # would otherwise send the whole likelihood to -inf
+        return float(np.sum(self._dist(pairs).logpmf(observed)))
 
     def sample(self, n=1, rng=None):
         """
