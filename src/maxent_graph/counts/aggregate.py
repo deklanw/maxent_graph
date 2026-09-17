@@ -16,6 +16,8 @@ BiECM p-values rather than a separate code path.
 
 import numpy as np
 import pandas as pd
+import scipy.optimize
+import scipy.special
 import scipy.stats
 from scipy.signal import fftconvolve
 
@@ -40,23 +42,115 @@ COLUMNS = [
 ]
 
 
-def _cell_pmf(model, dyads, cap):
+def _tilted_moments(log_pmfs, grid, theta):
     """
-    Convolves the dyad pmfs of one cell into the pmf of the cell total,
-    truncated above ``cap``.
-
-    Truncation costs nothing below ``cap``: dropped per-dyad mass can only
-    ever land above it, since weights are non-negative. So the lower
-    cumulative -- the only part the tail probabilities need -- is exact.
+    Total mean and variance of the dyads after tilting every pmf by
+    ``exp(theta * k)``, on the truncated grid.
     """
-    support = np.arange(cap + 1)
-    pmfs = np.asarray(model.pmf(support[:, None], dyads), dtype=np.float64)
+    tilted = log_pmfs + theta * grid[:, None]
+    tilted = np.exp(tilted - tilted.max(axis=0))
+    norm = tilted.sum(axis=0)
+    mean = (grid[:, None] * tilted).sum(axis=0) / norm
+    second = (grid[:, None] ** 2 * tilted).sum(axis=0) / norm
+    return mean.sum(), np.maximum(second - mean**2, 0.0).sum()
 
-    total = np.zeros(cap + 1)
-    total[0] = 1.0
-    for j in range(pmfs.shape[1]):
-        total = fftconvolve(total, pmfs[:, j])[: cap + 1]
-    return np.clip(total, 0.0, 1.0)
+
+def _solve_tilt(log_pmfs, grid, target):
+    """
+    The tilt whose tilted total has mean ``target``.
+
+    The tilted mean is the derivative of a cumulant generating function and
+    so increasing in the tilt, which makes a bracketed solve safe.
+    """
+    at_zero = _tilted_moments(log_pmfs, grid, 0.0)[0] - target
+    if abs(at_zero) < 1e-9 * max(1.0, target):
+        return 0.0
+
+    direction = 1.0 if at_zero < 0 else -1.0
+    step = 0.1
+    for _ in range(60):
+        other = direction * step
+        if (_tilted_moments(log_pmfs, grid, other)[0] - target) * at_zero < 0:
+            lo, hi = sorted((0.0, other))
+            return scipy.optimize.brentq(
+                lambda t: _tilted_moments(log_pmfs, grid, t)[0] - target,
+                lo,
+                hi,
+                xtol=1e-12,
+            )
+        step *= 2
+    return direction * step
+
+
+def _tilted_log_pmf(log_pmfs, grid, theta, cap):
+    """
+    Log pmf of the cell total on ``0..cap``, by convolving the tilted dyad
+    pmfs and untilting the result.
+
+    Tilting commutes with convolution, so this is exact; what it buys is
+    accuracy. An FFT smears round-off of order ``eps * max`` across every
+    entry, which swamps any probability far below the peak. Tilting moves the
+    peak onto the region being asked about, so there the round-off is
+    negligible relative to the values.
+    """
+    total = np.ones(1)
+    log_scale = 0.0
+    for j in range(log_pmfs.shape[1]):
+        column = log_pmfs[:, j] + theta * grid
+        top = column.max()
+        column = np.exp(column - top)
+        nonzero = np.flatnonzero(column)
+        column = column[: nonzero[-1] + 1] if len(nonzero) else column[:1]
+        log_scale += top
+
+        total = np.clip(fftconvolve(total, column)[: cap + 1], 0.0, None)
+        peak = total.max()
+        total /= peak
+        log_scale += np.log(peak)
+
+    out = np.full(cap + 1, -np.inf)
+    with np.errstate(divide="ignore"):
+        out[: len(total)] = np.log(total) + log_scale - theta * grid[: len(total)]
+    return out, total
+
+
+def _convolved_tails(model, dyads, observed, expected, variance, sigma):
+    """
+    Upper and lower tail of a cell total by convolution, each to full relative
+    accuracy however small.
+
+    The tail on the observed side of the mean is summed directly in log space
+    from a tilted convolution centred on the observed total; the other is its
+    complement, which is then close to one and loses nothing. Mass dropped by
+    truncating the grid can only lie above it, so the lower tail is exact and
+    the window is widened until the tilted pmf has decayed at its top.
+    """
+    if observed == 0:
+        log_zero = np.asarray(model.logpmf(0, dyads), dtype=np.float64).sum()
+        return 1.0, float(np.exp(log_zero))
+
+    sd = np.sqrt(max(variance, 0.0))
+    cap = int(max(observed, np.ceil(expected + sigma * sd))) + 1
+
+    for _ in range(12):
+        grid = np.arange(cap + 1, dtype=np.float64)
+        log_pmfs = np.asarray(model.logpmf(grid[:, None], dyads), dtype=np.float64)
+        theta = _solve_tilt(log_pmfs, grid, observed)
+        log_pmf, tilted = _tilted_log_pmf(log_pmfs, grid, theta, cap)
+
+        window = max(1, (cap - observed) // 4)
+        if tilted[-window:].sum() <= 1e-12 * tilted.sum() or theta < 0:
+            break
+        cap = observed + 2 * (cap - observed) + 1
+
+    at_observed = np.exp(log_pmf[observed])
+    if theta >= 0:
+        upper = np.exp(scipy.special.logsumexp(log_pmf[observed:]))
+        lower = 1.0 - (upper - at_observed)
+    else:
+        lower = np.exp(scipy.special.logsumexp(log_pmf[: observed + 1]))
+        upper = 1.0 - (lower - at_observed)
+    return upper, lower
 
 
 def _cell_tails(
@@ -102,15 +196,10 @@ def _cell_tails(
         method = "fft" if len(dyads[0]) <= max_fft_dyads else "normal"
 
     if method == "fft":
-        sd = np.sqrt(variance)
-        cap = int(max(observed, np.ceil(expected + sigma * sd))) + 1
-        pmf = _cell_pmf(model, dyads, cap)
-        lower = pmf[: observed + 1].sum()
-        return (
-            float(np.clip(1.0 - pmf[:observed].sum(), 0.0, 1.0)),
-            float(np.clip(lower, 0.0, 1.0)),
-            "fft",
+        upper, lower = _convolved_tails(
+            model, dyads, observed, expected, variance, sigma
         )
+        return float(np.clip(upper, 0.0, 1.0)), float(np.clip(lower, 0.0, 1.0)), "fft"
 
     if variance <= 0:
         # a total that cannot vary is a point mass at its mean
@@ -155,15 +244,17 @@ def aggregate_blocks(
         How to get each cell's tail probability. ``"exact"`` uses the family's
         own cell distribution (Poisson for family A, hypergeometric for
         ``exact=True`` stub matching) and errors if there isn't one.
-        ``"fft"`` convolves the dyad pmfs, which is exact up to floating
-        point. ``"normal"`` uses a normal approximation with a continuity
+        ``"fft"`` convolves the dyad pmfs, exponentially tilted onto the
+        observed total so that FFT round-off cannot swamp a tail probability
+        however small. ``"normal"`` uses a normal approximation with a continuity
         correction; it drifts badly for the overdispersed families, where a
         cell total can be far from normal, so prefer the convolution when the
         cell is small enough to afford it. ``"auto"`` takes the exact
         distribution when it exists, else convolves cells of at most
         ``max_fft_dyads`` dyads, else approximates.
     sigma : float
-        How many standard deviations above the mean to truncate a convolution.
+        How many standard deviations above the mean to start a convolution's
+        window. The window widens by itself when an upper tail needs it.
 
     Returns
     -------

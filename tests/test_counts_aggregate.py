@@ -393,6 +393,71 @@ def test_exact_margin_cell_variance_matches_simulation():
     assert cell.variance < independent[np.ix_(rows, cols)].sum()
 
 
+def extreme_blocks():
+    upper = np.ones((10, 10))
+    upper[:5, :5] = 60.0
+    upper[5:, 5:] = 2.0
+    lower = np.full((10, 10), 20.0)
+    lower[:5, :5] = 0.0
+    return np.repeat([0, 1], 5), upper, lower
+
+
+@pytest.mark.parametrize("tail", ["upper", "lower"])
+def test_convolution_keeps_tiny_tails(tail):
+    """
+    An FFT convolution smears round-off of order 1e-16 over every entry, so a
+    complement or a direct sum of it turned a 1e-39 tail into 1e-15. Tilting
+    the convolution onto the observed total keeps full relative accuracy.
+    """
+    blocks, upper_matrix, lower_matrix = extreme_blocks()
+    model = BIPCM(upper_matrix if tail == "upper" else lower_matrix).fit()
+
+    exact = aggregate_blocks(model, blocks, blocks, method="exact")
+    convolved = aggregate_blocks(model, blocks, blocks, method="fft")
+
+    column = f"p_{tail}"
+    assert exact[column].min() < (1e-30 if tail == "upper" else 1e-60)
+    np.testing.assert_allclose(convolved[column], exact[column], rtol=1e-8)
+    np.testing.assert_allclose(convolved.p_upper, exact.p_upper, rtol=1e-8)
+    np.testing.assert_allclose(convolved.p_lower, exact.p_lower, rtol=1e-8)
+
+
+def identical_negative_binomial_cell(weights, r=2.0, p=0.5):
+    """
+    A one-row table of identical NB(r, p) dyads, whose total is exactly
+    NB(n r, p) -- an exact reference for a family with no cell distribution.
+    """
+    from maxent_graph.counts import DyadLayout, DyadTable
+
+    W = np.asarray(weights, dtype=float)[None, :]
+    layout = DyadLayout.bipartite(*W.shape)
+
+    def factory(idx):
+        shape = W.shape if idx is None else np.shape(idx[0])
+        return scipy.stats.nbinom(n=np.full(shape, r), p=np.full(shape, p))
+
+    mean = np.full(W.shape, r * (1 - p) / p)
+    table = DyadTable(W, layout, mean, factory)
+    exact = scipy.stats.nbinom(n=W.shape[1] * r, p=p)
+    return table, exact
+
+
+@pytest.mark.parametrize(
+    "weights, tail",
+    [([131.0] + [1.0] * 19, "upper"), ([2.0] + [0.0] * 19, "lower")],
+)
+def test_convolution_keeps_tiny_tails_for_overdispersed_dyads(weights, tail):
+    table, exact = identical_negative_binomial_cell(weights)
+    total = int(sum(weights))
+    cell = aggregate_blocks(table, [0], np.zeros(len(weights), int), method="fft").iloc[
+        0
+    ]
+
+    np.testing.assert_allclose(cell.p_upper, exact.sf(total - 1), rtol=1e-8)
+    np.testing.assert_allclose(cell.p_lower, exact.cdf(total), rtol=1e-8)
+    assert (cell.p_upper if tail == "upper" else cell.p_lower) < 1e-9
+
+
 def test_normal_approximation_of_a_fixed_total():
     from maxent_graph.counts.aggregate import _cell_tails
 
