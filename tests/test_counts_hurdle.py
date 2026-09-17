@@ -26,8 +26,8 @@ def models(**kwargs):
     ]
 
 
-def both_positive_parts():
-    return models() + models(positive="ztp")
+def both_positive_parts(**kwargs):
+    return models(**kwargs) + models(positive="ztp", **kwargs)
 
 
 @pytest.fixture(scope="module")
@@ -56,6 +56,69 @@ def test_presence_part_is_the_bicm():
 
 
 @pytest.mark.parametrize("model", both_positive_parts())
+def test_expected_strengths_reproduce_observed(model):
+    """
+    The default constrains the model's own expected strengths, summed over
+    every dyad, like every other model in the library. Before, the positive
+    part was fitted on the observed edges only and the model's expected total
+    came up well short -- 65% of the observed weight on kato.
+    """
+    model.fit()
+    assert model.strengths == "joint"
+    np.testing.assert_allclose(
+        model.expected_row_strengths(), model.row_strengths, atol=1e-5
+    )
+    np.testing.assert_allclose(
+        model.expected_col_strengths(), model.col_strengths, atol=1e-5
+    )
+    assert model.mean().sum() == pytest.approx(model.total_weight, rel=1e-7)
+    assert model.fit_info["strength_error"] == model.joint_strength_error()
+
+
+@pytest.mark.parametrize("positive", ["shifted", "ztp"])
+def test_joint_strengths_on_a_sparse_network(positive):
+    model = BIHPCM(kato(), positive=positive).fit()
+    relative = np.abs(model.expected_row_strengths() - model.row_strengths) / (
+        model.row_strengths
+    )
+    assert relative.max() < 1e-8
+    assert model.mean().sum() == pytest.approx(model.total_weight, rel=1e-10)
+    # the joint constraint is spread over every dyad, so no boundary to creep
+    # towards and no need for the constraint-residual stopping rule
+    assert model.fit_info["iterations"] < 500
+
+
+def test_joint_fit_gives_absent_dyads_a_rate():
+    """
+    Fitted on the observed edges only, every absent dyad had rate zero, so a
+    weight of two or more there had probability zero. The joint fit gives
+    every dyad whose endpoints both carry weight beyond one a positive rate.
+    """
+    B = random_bipartite()
+    joint = BIHPCM(B).fit()
+    conditional = BIHPCM(B, strengths="conditional").fit()
+
+    absent = joint.layout.support & ~joint.adjacency
+    excess_rows = joint.row_strengths > joint.row_degrees
+    excess_cols = joint.col_strengths > joint.col_degrees
+    reachable = absent & excess_rows[:, None] & excess_cols[None, :]
+    assert reachable.any()
+
+    assert np.all(joint.rate[reachable] > 0)
+    assert np.all(joint.sf(2)[reachable] > 0)
+    assert np.all(conditional.rate[absent] == 0)
+    assert np.all(conditional.sf(2)[absent] == 0)
+
+
+def test_strengths_validation():
+    with pytest.raises(ValueError, match="strengths"):
+        BIHPCM(random_bipartite(), strengths="something")
+    with pytest.raises(ValueError, match="EM"):
+        BIHPCM(random_bipartite(), kind="zip", strengths="joint")
+    assert BIHPCM(random_bipartite(), kind="zip").strengths is None
+
+
+@pytest.mark.parametrize("model", both_positive_parts(strengths="conditional"))
 def test_expected_strengths_over_positive_dyads(model):
     model.fit()
     np.testing.assert_allclose(
@@ -86,17 +149,26 @@ def test_unit_weights_drive_the_rate_to_zero(positive):
     # a zero rate is a point mass at one, so the model is the BiCM again
     np.testing.assert_allclose(model.mean(), model.presence)
     np.testing.assert_allclose(model.pmf(1), model.presence)
-    assert model.fit_info["rate_zero_dyads"] == model.adjacency.sum()
+    assert model.fit_info["rate_zero_dyads"] >= model.adjacency.sum()
 
 
-def test_partially_unit_nodes_are_peeled_rather_than_chased():
+@pytest.mark.parametrize("strengths", ["joint", "conditional"])
+@pytest.mark.parametrize("positive", ["shifted", "ztp"])
+def test_unit_weight_nodes_get_rate_exactly_zero(positive, strengths):
+    """
+    Both positive parts are solved for the excess of the weight over one, so
+    a node carrying only unit weights has excess zero and rate exactly zero
+    after one update, with nothing to peel and nothing to creep towards.
+    """
     B = random_bipartite()
     B[0] = (B[0] > 0).astype(float)  # row 0 carries only unit weights
-    model = BIHPCM(B, positive="ztp").fit()
+    model = BIHPCM(B, positive=positive, strengths=strengths).fit()
 
     assert np.all(model.rate[0] == 0)
-    assert model.fit_info["rate_zero_dyads"] >= (B[0] > 0).sum()
-    assert model.positive_strength_error() < 1e-6
+    assert model.fit_info["iterations"] < 100
+    # a unit-weight node's expected strength is its expected degree, so it is
+    # matched exactly as well as the presence fit matched the degree
+    assert model.strength_error() <= model.degree_error() + 1e-9
 
 
 def positive_dyads(model, count=3):
@@ -157,11 +229,32 @@ def test_truncated_quantities_follow_the_stated_formulae(model):
 
 
 @pytest.mark.parametrize("model", models())
+def test_shifted_joint_fit_is_a_weighted_poisson_fit(model):
+    """
+    The conditional mean is linear in the rate, so the joint constraint
+    reduces to a Poisson configuration model on ``w - 1`` weighted by the
+    presence probabilities, with targets ``s_i - sum_j p_ij``.
+    """
+    model.fit()
+    weighted = model.presence * model.rate
+
+    np.testing.assert_allclose(
+        model.layout.row_totals(weighted),
+        model.row_strengths - model.expected_row_degrees(),
+        atol=1e-5,
+    )
+    np.testing.assert_allclose(
+        model.layout.col_totals(weighted),
+        model.col_strengths - model.expected_col_degrees(),
+        atol=1e-5,
+    )
+
+
+@pytest.mark.parametrize("model", models(strengths="conditional"))
 def test_shifted_part_is_a_poisson_fit_on_the_weight_minus_one(model):
     """
-    The whole point of shifting rather than truncating: the conditional mean
-    is linear in the rate, so the strength constraint reduces to a Poisson
-    configuration model on ``w - 1`` with targets ``s_i - k_i``.
+    Over the observed edges only, the same linearity makes the constraint a
+    Poisson configuration model on ``w - 1`` with targets ``s_i - k_i``.
     """
     model.fit()
     mask = model.adjacency
@@ -190,19 +283,12 @@ def test_shifted_part_reaches_the_boundary_in_one_step():
 
     shifted = BIHPCM(B).fit()
     assert np.all(shifted.rate[0] == 0)
-    assert shifted.positive_strength_error() < 1e-9
+    assert shifted.strength_error() <= shifted.degree_error() + 1e-9
 
     truncated = BIHPCM(B, positive="ztp").fit()
     assert np.all(truncated.rate[0] == 0)
     # and the two are genuinely different fits elsewhere
     assert not np.allclose(shifted.rate, truncated.rate)
-
-
-def test_shifted_part_converges_at_least_as_easily():
-    for W, cls in [(kato(), BIHPCM), (kangaroo(), UHPCM)]:
-        shifted = cls(W).fit()
-        truncated = cls(W, positive="ztp").fit()
-        assert shifted.fit_info["iterations"] <= truncated.fit_info["iterations"]
 
 
 @pytest.mark.parametrize("model", both_positive_parts())
@@ -232,6 +318,23 @@ def test_samples_respect_the_layout_and_the_mean(model):
     variance = model.var((rows, cols))
     empirical = draws[:, rows, cols].mean(axis=0)
     assert np.all(np.abs(empirical - expected) < 5 * np.sqrt(variance / 4000) + 1e-9)
+
+
+@pytest.mark.parametrize("positive", ["shifted", "ztp"])
+def test_loglik_survives_pmf_underflow(positive):
+    B = random_bipartite()
+    # a unit weight where a heavy row meets a heavy column: its rate runs to
+    # thousands, and the probability of weight one underflows
+    B[0, 0] = 1.0
+    B[0, 1] = B[1, 0] = 5000.0
+    model = BIHPCM(B, positive=positive).fit()
+
+    rows, cols = model.layout.canonical_pairs()
+    assert np.any(model.pmf(model.weights[rows, cols], (rows, cols)) == 0)
+    assert np.isfinite(model.loglik())
+    assert model.loglik() == pytest.approx(
+        model.logpmf(model.weights[rows, cols], (rows, cols)).sum()
+    )
 
 
 def test_presence_can_be_supplied():
@@ -280,8 +383,22 @@ def test_real_networks_fit(model):
     model.fit()
     assert model.degree_error() < 1e-3
     assert np.isfinite(model.loglik())
-    # the strength constraint is met to within the tolerance the fit settles for
-    assert model.positive_strength_error() < 1e-5 * model.total_weight
+    assert model.strength_error() < 1e-6 * model.total_weight
+
+
+@pytest.mark.parametrize(
+    "model",
+    [
+        BIHPCM(kato(), strengths="conditional"),
+        UHPCM(kangaroo(), strengths="conditional"),
+        DHPCM(residence_hall(), strengths="conditional"),
+    ],
+)
+def test_real_networks_fit_conditionally(model):
+    model.fit()
+    assert model.fit_info["strength_error"] == model.positive_strength_error()
+    # the tolerance the fit settles for near a boundary on sparse supports
+    assert model.strength_error() < 1e-5 * model.total_weight
 
 
 def test_aggregates_into_blocks(bipartite_model):

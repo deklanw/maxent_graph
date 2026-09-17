@@ -32,6 +32,7 @@ from .dists import Hurdle, ShiftedPoisson, ZeroTruncatedPoisson
 from .layout import DyadLayout, dense
 
 KINDS = ("hurdle", "zip")
+STRENGTHS = ("joint", "conditional")
 POSITIVE_PARTS = {"shifted": ShiftedPoisson, "ztp": ZeroTruncatedPoisson}
 
 PRESENCE_MODELS = {"bipartite": BICM, "undirected": UBCM, "directed": DBCM}
@@ -93,9 +94,9 @@ class HurdlePoissonCM(DyadModel):
     ``a_ij ~ Bernoulli(x_i y_j / (1 + x_i y_j))`` and, given presence, a
     Poisson positive part with rate ``u_i v_j``. The presence half is the
     binary configuration model and is fitted by the existing BiCM / UBCM /
-    DBCM code; the positive half is fitted on the observed edges only, so its
-    constraint is that the expected strength *over the observed edges* matches
-    the observed strength.
+    DBCM code, so expected degrees match observed ones. The positive half is
+    fitted so that expected strengths match too -- by default over the whole
+    model, as for every other model in the library.
 
     Parameters
     ----------
@@ -111,26 +112,32 @@ class HurdlePoissonCM(DyadModel):
         ``"shifted"``, except that ``kind="zip"`` implies ``"ztp"``, since
         that is what conditioning a zero-inflated Poisson on being positive
         gives.
+    strengths : {"joint", "conditional"}
+        What the positive half's strength constraint sums over. ``"joint"``,
+        the default, matches the model's expected strengths,
+        ``sum_j p_ij E[w_ij | present] = s_i`` over every dyad, which gives
+        every dyad a rate and so lets an absent dyad carry any positive
+        weight. ``"conditional"`` matches them over the observed edges only,
+        which is what maximising the factorised likelihood gives, but leaves
+        the model's own expected strengths short of the observed ones and pins
+        the rate of every absent dyad at zero, making a weight of two or more
+        impossible there. Not used by ``kind="zip"``, which is fitted by EM.
 
     Notes
     -----
     The binary configuration models ignore self-loops, so these do too.
 
-    Because the positive half conditions on the observed edge set, the *joint*
-    expected strength, which sums over absent dyads too, is not the observed
-    strength. ``expected_positive_row_strengths`` is the quantity the fit
-    actually constrains.
-
-    The positive half can also sit on a boundary the product form cannot
-    reach, even with the shifted part: a set of rows whose neighbours' excess
+    Under ``strengths="conditional"`` the positive half can sit on a boundary
+    the product form cannot reach: a set of rows whose neighbours' excess
     weight is owed almost entirely to that set drives some rates towards zero
     or infinity. The fit then stops on the constraint residual rather than on
-    the parameters, so ``fit_info["positive_strength_error"]`` is the number
-    to check -- small relative to the strengths means the fitted distribution
-    has settled, whatever the rates are still doing.
+    the parameters, so ``fit_info["strength_error"]`` is the number to check
+    -- small relative to the strengths means the fitted distribution has
+    settled, whatever the rates are still doing. The joint constraint spreads
+    over every dyad and does not have that problem.
     """
 
-    def __init__(self, W, layout, kind="hurdle", positive=None):
+    def __init__(self, W, layout, kind="hurdle", positive=None, strengths=None):
         if layout.self_loops:
             raise NotImplementedError(
                 "the binary presence models ignore self-loops, so the hurdle "
@@ -149,9 +156,19 @@ class HurdlePoissonCM(DyadModel):
                 "zero-truncated Poisson, so kind='zip' needs positive='ztp'"
             )
 
+        if strengths is None:
+            strengths = "joint" if kind == "hurdle" else None
+        elif kind == "zip":
+            raise ValueError(
+                "kind='zip' is fitted by EM and has no strength constraint to choose"
+            )
+        elif strengths not in STRENGTHS:
+            raise ValueError(f"strengths must be one of {STRENGTHS}")
+
         super().__init__(W, layout)
         self.kind = kind
         self.positive = positive
+        self.strengths = strengths
         self.presence = None
         self.rate = None
         self.pi = None
@@ -197,177 +214,98 @@ class HurdlePoissonCM(DyadModel):
     # positive part
     # ------------------------------------------------------------------
 
-    def _peel_unit_weight_nodes(self, mask):
+    def _excess_ratio(self, rate):
         """
-        Peels off the dyads whose rate is pinned at zero.
+        ``(E[w | present] - 1) / rate``, the factor the rate solver weights
+        each dyad by.
 
-        A zero-truncated Poisson has mean strictly above one for any positive
-        rate, so a node all of whose weights are one can only meet its
-        strength constraint at rate zero -- and then every one of its dyads
-        contributes exactly one, which takes those dyads out of the system and
-        can leave a neighbour in the same position. Peeling repeatedly and
-        solving what is left is exact, where iterating the full system merely
-        creeps towards the boundary.
-
-        Returns the remaining dyads and the strength targets left over for
-        them.
-        """
-        active = mask.copy()
-        row_target = self.row_strengths.copy()
-        col_target = self.col_strengths.copy()
-        peeled = 0
-
-        for _ in range(self.layout.n_row + self.layout.n_col + 1):
-            row_degrees = active.sum(axis=1)
-            col_degrees = active.sum(axis=0)
-            unit_rows = np.isclose(row_target, row_degrees) & (row_degrees > 0)
-            unit_cols = np.isclose(col_target, col_degrees) & (col_degrees > 0)
-            if not unit_rows.any() and not unit_cols.any():
-                break
-
-            fixed = active & (unit_rows[:, None] | unit_cols[None, :])
-            row_target = row_target - fixed.sum(axis=1)
-            col_target = col_target - fixed.sum(axis=0)
-            active = active & ~fixed
-            peeled += int(fixed.sum())
-
-        return active, row_target, col_target, peeled
-
-    def _fit_rate(self, mask, tol, max_iter, damping, strength_tol=1e-6):
-        """
-        Solves the positive part's strength constraints over ``mask``.
+        One for the shifted part, whose excess over one is the rate itself.
+        For the truncated part it is ``1 / (1 - exp(-lam)) - 1 / lam``, which
+        cancels badly as the rate goes to zero, where it tends to one half.
         """
         if self.positive == "shifted":
-            return self._fit_rate_shifted(mask, tol, max_iter, damping, strength_tol)
-        return self._fit_rate_truncated(mask, tol, max_iter, damping, strength_tol)
+            return np.ones_like(rate)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            direct = 1.0 / -np.expm1(-rate) - 1.0 / rate
+        series = 0.5 - rate / 12.0 + rate**3 / 720.0
+        return np.where(rate < 1e-4, series, direct)
 
-    def _fit_rate_shifted(self, mask, tol, max_iter, damping, strength_tol):
+    def _fit_rate(self, weights, tol, max_iter, damping, strength_tol=1e-6):
         """
-        Solves the shifted Poisson strength constraints over ``mask``.
+        Solves the positive part's strength constraints.
 
-        ``E[w | a = 1] = 1 + lam``, so the constraint is just a Poisson fit on
-        ``w - 1`` with targets ``s_i - k_i``. That is linear in the rates, and
-        a node carrying only unit weights has target zero and so rate exactly
-        zero, in one step -- which is the whole reason to prefer this positive
-        part to the truncated one.
+        ``weights`` says how much each dyad counts towards a node's expected
+        strength: the presence probabilities, for strengths matched over the
+        whole model, or the observed adjacency, for strengths matched over the
+        observed edges only. Either way the constraint is
+        ``sum_j weights_ij * E[w_ij | present] = s_i``.
+
+        It is solved for the *excess* over one, ``sum_j weights_ij *
+        (E[w_ij | present] - 1) = s_i - sum_j weights_ij``. A node whose
+        weights are all one has excess zero, so its rate is exactly zero after
+        a single update -- no peeling, and no creeping towards the boundary
+        through a transcendental link.
         """
-        support = mask.astype(np.float64)
-        row_target = self.row_strengths - self.layout.row_totals(support)
-        col_target = self.col_strengths - self.layout.col_totals(support)
-        excess = row_target.sum()
+        layout = self.layout
+        weights = np.where(layout.support, weights, 0.0)
+        scale = layout.dyad_scale
 
-        if excess <= 0:
-            # every weight is one
-            return np.zeros(self.layout.shape), {
-                "iterations": 0,
-                "delta": 0.0,
-                "rate_zero_dyads": int(mask.sum()),
-            }
-
-        scale = np.sqrt(excess)
-
-        def update_row(u, v):
-            return _safe_ratio(row_target, support @ v)
-
-        def update_col(u, v):
-            return _safe_ratio(col_target, support.T @ u)
-
-        u, v, info = solve_product_form(
-            update_row,
-            update_col,
-            row_target / scale,
-            col_target / scale,
-            tied=self.layout.tied,
-            tol=tol,
-            max_iter=max_iter,
-            damping=damping,
-            converged=self._constraint_check(mask, strength_tol),
-            check_after=max(500, max_iter // 10),
-            name=type(self).__name__,
+        unit_rows = np.isclose(self.row_strengths, self.row_degrees)
+        unit_cols = np.isclose(self.col_strengths, self.col_degrees)
+        row_target = np.where(
+            unit_rows,
+            0.0,
+            np.maximum(self.row_strengths - layout.row_totals(weights), 0.0),
         )
-        rate = np.where(mask, self.layout.dyad_scale * np.outer(u, v), 0.0)
-        zeros = int((mask & (rate == 0)).sum())
-        if zeros:
-            info["rate_zero_dyads"] = zeros
-        return rate, info
+        col_target = np.where(
+            unit_cols,
+            0.0,
+            np.maximum(self.col_strengths - layout.col_totals(weights), 0.0),
+        )
 
-    def _constraint_check(self, mask, strength_tol):
-        """
-        Stopping rule on the strength residual rather than on the parameters.
-        """
-        threshold = strength_tol * max(1.0, self.total_weight)
-        scale = self.layout.dyad_scale
-
-        def constraints_met(u, v):
-            rate = np.where(mask, scale * np.outer(u, v), 0.0)
-            conditional = np.where(mask, self.positive_dist(rate).mean(), 0.0)
-            return (
-                max(
-                    np.max(np.abs(conditional.sum(axis=1) - self.row_strengths)),
-                    np.max(np.abs(conditional.sum(axis=0) - self.col_strengths)),
-                )
-                < threshold
-            )
-
-        return constraints_met
-
-    def _fit_rate_truncated(self, mask, tol, max_iter, damping, strength_tol):
-        """
-        Solves the zero-truncated Poisson strength constraints over ``mask``.
-
-        Networks dominated by unit weights leave the remaining maximum close
-        to the rate-zero boundary, where the parameters creep but the fitted
-        distribution is long since settled, so the constraint residual is the
-        second stopping rule.
-        """
-        active, row_target, col_target, peeled = self._peel_unit_weight_nodes(mask)
-
-        if not active.any():
-            return np.zeros(self.layout.shape), {
+        excess = row_target.sum()
+        if excess <= 0:
+            return np.zeros(layout.shape), {
                 "iterations": 0,
                 "delta": 0.0,
-                "rate_zero_dyads": peeled,
+                "rate_zero_dyads": int((weights > 0).sum()),
             }
 
-        total = row_target.sum()
-        if total <= 0:
-            raise ValueError("the network has no weight")
-        u0 = row_target / np.sqrt(total)
-        v0 = col_target / np.sqrt(total)
+        # with presence probabilities as weights the two sides' targets agree
+        # only to the precision of the presence fit; make them agree exactly,
+        # or the alternating updates chase a mismatch forever
+        if not layout.tied and col_target.sum() > 0:
+            col_target = col_target * (excess / col_target.sum())
 
-        scale = self.layout.dyad_scale
-
-        def truncation_weights(u, v):
+        def weighted(u, v):
             rate = scale * np.outer(u, v)
-            with np.errstate(divide="ignore", invalid="ignore"):
-                weights = 1.0 / -np.expm1(-rate)
-            return np.where(active & np.isfinite(weights), weights, 0.0)
+            return weights * self._excess_ratio(rate)
 
         def update_row(u, v):
-            return _safe_ratio(row_target, truncation_weights(u, v) @ v)
+            return _safe_ratio(row_target, weighted(u, v) @ v)
 
         def update_col(u, v):
-            return _safe_ratio(col_target, truncation_weights(u, v).T @ u)
+            return _safe_ratio(col_target, weighted(u, v).T @ u)
 
         threshold = strength_tol * max(1.0, self.total_weight)
 
         def constraints_met(u, v):
-            rate = np.where(active, scale * np.outer(u, v), 0.0)
-            conditional = np.where(active, ZeroTruncatedPoisson(rate).mean(), 0.0)
+            achieved = weighted(u, v) * np.outer(u, v)
             return (
                 max(
-                    np.max(np.abs(conditional.sum(axis=1) - row_target)),
-                    np.max(np.abs(conditional.sum(axis=0) - col_target)),
+                    np.max(np.abs(layout.row_totals(achieved) - row_target)),
+                    np.max(np.abs(layout.col_totals(achieved) - col_target)),
                 )
                 < threshold
             )
 
+        root = np.sqrt(excess)
         u, v, info = solve_product_form(
             update_row,
             update_col,
-            u0,
-            v0,
-            tied=self.layout.tied,
+            row_target / root,
+            col_target / root,
+            tied=layout.tied,
             tol=tol,
             max_iter=max_iter,
             damping=damping,
@@ -375,9 +313,11 @@ class HurdlePoissonCM(DyadModel):
             check_after=max(500, max_iter // 10),
             name=type(self).__name__,
         )
-        if peeled:
-            info["rate_zero_dyads"] = peeled
-        return np.where(active, scale * np.outer(u, v), 0.0), info
+        rate = np.where(layout.support, scale * np.outer(u, v), 0.0)
+        zeros = int(((weights > 0) & (rate == 0)).sum())
+        if zeros:
+            info["rate_zero_dyads"] = zeros
+        return rate, info
 
     # ------------------------------------------------------------------
     # zero inflation
@@ -506,8 +446,8 @@ class HurdlePoissonCM(DyadModel):
         ``presence`` optionally supplies an already-fitted matrix of presence
         probabilities instead of solving the binary model again.
         ``strength_tol``, relative to the total weight, is the constraint
-        residual the positive half settles for when the maximum is near the
-        rate-zero boundary. Remaining keyword arguments go to the binary
+        residual the positive half settles for when the maximum is near a
+        boundary the parameters can only creep towards. Remaining keyword arguments go to the binary
         model's solver.
         """
         if damping is None:
@@ -520,9 +460,16 @@ class HurdlePoissonCM(DyadModel):
             if presence.shape != self.layout.shape:
                 raise ValueError("presence must have the layout's shape")
 
-        rate, info = self._fit_rate(
-            self.adjacency, tol, max_iter, damping, strength_tol
+        weights = (
+            presence if self.strengths == "joint" else self.adjacency.astype(np.float64)
         )
+        rate, info = self._fit_rate(weights, tol, max_iter, damping, strength_tol)
+        if self.strengths == "conditional":
+            # the conditional fit only identifies rates on the observed edges;
+            # the product form off them follows directions the fit leaves free,
+            # and on a sparse network runs to rates hundreds of times any
+            # observed weight, so they are not extrapolated
+            rate = np.where(self.adjacency, rate, 0.0)
 
         if self.kind == "zip":
             self.pi, rate, info = self._fit_zip(
@@ -537,9 +484,10 @@ class HurdlePoissonCM(DyadModel):
         self.fit_info = {
             "kind": self.kind,
             "positive": self.positive,
+            "strengths": self.strengths,
             "iterations": info.get("iterations"),
             "degree_error": self.degree_error(),
-            "positive_strength_error": self.positive_strength_error(),
+            "strength_error": self.strength_error(),
         }
         for key in (
             "rate_zero_dyads",
@@ -595,22 +543,45 @@ class HurdlePoissonCM(DyadModel):
         return self.layout.col_totals(conditional / self.layout.dyad_scale)
 
     def positive_strength_error(self):
+        """
+        Error in the strengths over the observed edges, which
+        ``strengths="conditional"`` constrains.
+        """
         return max(
             np.max(np.abs(self.expected_positive_row_strengths() - self.row_strengths)),
             np.max(np.abs(self.expected_positive_col_strengths() - self.col_strengths)),
         )
 
+    def joint_strength_error(self):
+        """
+        Error in the model's own expected strengths, which
+        ``strengths="joint"`` constrains.
+
+        It cannot fall below the presence fit's degree error: a node carrying
+        only unit weights has rate zero, so its expected strength is its
+        expected degree.
+        """
+        self._require_fit()
+        return DyadModel.constraint_error(self)
+
+    def strength_error(self):
+        """
+        Error in whichever strength constraint the fit imposed.
+        """
+        if self.strengths == "conditional":
+            return self.positive_strength_error()
+        return self.joint_strength_error()
+
     def constraint_error(self):
         """
         The two constraints the hurdle fit imposes: expected degrees, and
-        expected strengths over the observed edges.
+        expected strengths as chosen by ``strengths``.
 
-        For ``kind="zip"`` these are not constraints of the fit -- the
-        zero-inflated likelihood does not factorise, so neither is imposed --
-        and the numbers are a measure of how far the fit drifted from them
-        rather than a convergence diagnostic.
+        For ``kind="zip"`` neither is a constraint of the fit -- the
+        zero-inflated likelihood does not factorise -- and the number measures
+        how far the fit drifted from them rather than its convergence.
         """
-        return max(self.degree_error(), self.positive_strength_error())
+        return max(self.degree_error(), self.strength_error())
 
     # ------------------------------------------------------------------
     # distribution
@@ -629,10 +600,14 @@ class BIHPCM(HurdlePoissonCM):
     Bipartite hurdle Poisson configuration model. Presence is the BiCM.
     """
 
-    def __init__(self, B, kind="hurdle", positive=None):
+    def __init__(self, B, kind="hurdle", positive=None, strengths=None):
         B = dense(B)
         super().__init__(
-            B, DyadLayout.bipartite(*B.shape), kind=kind, positive=positive
+            B,
+            DyadLayout.bipartite(*B.shape),
+            kind=kind,
+            positive=positive,
+            strengths=strengths,
         )
 
 
@@ -641,10 +616,14 @@ class UHPCM(HurdlePoissonCM):
     Undirected hurdle Poisson configuration model. Presence is the UBCM.
     """
 
-    def __init__(self, A, kind="hurdle", positive=None):
+    def __init__(self, A, kind="hurdle", positive=None, strengths=None):
         A = dense(A)
         super().__init__(
-            A, DyadLayout.undirected(A.shape[0]), kind=kind, positive=positive
+            A,
+            DyadLayout.undirected(A.shape[0]),
+            kind=kind,
+            positive=positive,
+            strengths=strengths,
         )
 
 
@@ -653,8 +632,12 @@ class DHPCM(HurdlePoissonCM):
     Directed hurdle Poisson configuration model. Presence is the DBCM.
     """
 
-    def __init__(self, A, kind="hurdle", positive=None):
+    def __init__(self, A, kind="hurdle", positive=None, strengths=None):
         A = dense(A)
         super().__init__(
-            A, DyadLayout.directed(A.shape[0]), kind=kind, positive=positive
+            A,
+            DyadLayout.directed(A.shape[0]),
+            kind=kind,
+            positive=positive,
+            strengths=strengths,
         )
